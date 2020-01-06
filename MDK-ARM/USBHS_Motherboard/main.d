@@ -48,3 +48,13 @@ usbhs_motherboard\main.o: ../Inc/usbd_conf.h
 usbhs_motherboard\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 usbhs_motherboard\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 usbhs_motherboard\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+usbhs_motherboard\main.o: ../Inc/dataMGR.h
+usbhs_motherboard\main.o: ../Inc/CE32_ioncom.h
+usbhs_motherboard\main.o: ../Inc/dataMGR.h
+usbhs_motherboard\main.o: ../Inc/CE32_macro.h
+usbhs_motherboard\main.o: ../Inc/usbd_cdc_if.h
+usbhs_motherboard\main.o: ../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h
+usbhs_motherboard\main.o: ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h
+usbhs_motherboard\main.o: ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h
+usbhs_motherboard\main.o: ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h
+usbhs_motherboard\main.o: ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h

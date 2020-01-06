@@ -53,3 +53,7 @@ usbhs_motherboard\usbd_cdc_if.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_h
 usbhs_motherboard\usbd_cdc_if.o: ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h
 usbhs_motherboard\usbd_cdc_if.o: ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h
 usbhs_motherboard\usbd_cdc_if.o: ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h
+usbhs_motherboard\usbd_cdc_if.o: ../Inc/dataMGR.h
+usbhs_motherboard\usbd_cdc_if.o: ../Inc/CE32_ioncom.h
+usbhs_motherboard\usbd_cdc_if.o: ../Inc/dataMGR.h
+usbhs_motherboard\usbd_cdc_if.o: ../Inc/CE32_macro.h

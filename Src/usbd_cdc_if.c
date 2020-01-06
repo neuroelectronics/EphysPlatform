@@ -23,7 +23,8 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "dataMGR.h"
+#include "CE32_ioncom.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -32,7 +33,26 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+extern uint8_t data_buf_RX1[BUF_SIZE];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_RX2[BUF_SIZE];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_RX3[BUF_SIZE];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_RX4[BUF_SIZE];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_TX[BUF_SIZE];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_RX_CDC[BUF_SIZE];
+extern dataMGR MGR_RX1;
+extern dataMGR MGR_RX2;
+extern dataMGR MGR_RX3;
+extern dataMGR MGR_RX4;
+extern dataMGR MGR_TX;
+extern dataMGR MGR_CDC;
 
+extern UART_HandleTypeDef huart6;
+extern UART_HandleTypeDef huart7;
+
+extern CE32_IONCOM_Handle IC_handle1;
+extern CE32_IONCOM_Handle IC_handle2;
+extern CE32_IONCOM_Handle IC_handle3;
+extern CE32_IONCOM_Handle IC_handle4;
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -226,7 +246,142 @@ static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   /* 6      | bDataBits  |   1   | Number Data bits (5, 6, 7, 8 or 16).          */
   /*******************************************************************************/
   case CDC_SET_LINE_CODING:
+				UART_DISABLE(IC_handle1.huart->Instance);
+		IC_handle1.huart->Init.BaudRate = *(uint32_t*)pbuf;
+		IC_handle1.huart->Init.WordLength = UART_WORDLENGTH_8B;
+		IC_handle1.huart->Init.StopBits = UART_STOPBITS_1;
+		IC_handle1.huart->Init.Parity = UART_PARITY_NONE;
+		IC_handle1.huart->Init.Mode = UART_MODE_TX_RX;
+		IC_handle1.huart->Init.HwFlowCtl = UART_HWCONTROL_NONE;
+		IC_handle1.huart->Init.OverSampling = UART_OVERSAMPLING_16;
+		IC_handle1.huart->Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+		IC_handle1.huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+		if (HAL_UART_Init(IC_handle1.huart) != HAL_OK)
+		{
+			Error_Handler();
+		}
+		//IC_handle.huart->Instance->CR1|=USART_CR1_RXNEIE;  //Enable RX interrput to receive commands
+		//configure USART4 DMA
+		UART_IONCOM_DMA_Init(&IC_handle1);
+		IC_handle1.huart->hdmarx->Instance->PAR = (uint32_t)&IONCOM_UART_RDR(IC_handle1.huart->Instance);
+		IC_handle1.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle1.RX_MGR.dataPtr; //Set the DMA to be in circular mode and automatic filling the buffer
+		IC_handle1.huart->hdmarx->Instance->M1AR = (uint32_t)IC_handle1.RX_MGR.dataPtr+IC_handle1.DMA_TransSize; //Set the DMA to be in circular mode and automatic filling the buffer
+		IC_handle1.huart->hdmarx->Instance->NDTR = IC_handle1.DMA_TransSize;
+		
+		//SET_BIT(USART6->CR3, USART_CR3_DMAT); //enable UART_DMA_request
+		
+	
+		UART_DISABLE(IC_handle2.huart->Instance);
+		IC_handle2.huart->Init.BaudRate = *(uint32_t*)pbuf;
+		IC_handle2.huart->Init.WordLength = UART_WORDLENGTH_8B;
+		IC_handle2.huart->Init.StopBits = UART_STOPBITS_1;
+		IC_handle2.huart->Init.Parity = UART_PARITY_NONE;
+		IC_handle2.huart->Init.Mode = UART_MODE_TX_RX;
+		IC_handle2.huart->Init.HwFlowCtl = UART_HWCONTROL_NONE;
+		IC_handle2.huart->Init.OverSampling = UART_OVERSAMPLING_16;
+		IC_handle2.huart->Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+		IC_handle2.huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+		if (HAL_UART_Init(IC_handle2.huart) != HAL_OK)
+		{
+			Error_Handler();
+		}
+		//IC_handle.huart->Instance->CR1|=USART_CR1_RXNEIE;  //Enable RX interrput to receive commands
+		//configure USART4 DMA
+		UART_IONCOM_DMA_Init(&IC_handle2);
+		IC_handle2.huart->hdmarx->Instance->PAR = (uint32_t)&IONCOM_UART_RDR(IC_handle2.huart->Instance);
+		IC_handle2.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle2.RX_MGR.dataPtr; //Set the DMA to be in circular mode and automatic filling the buffer
+		IC_handle2.huart->hdmarx->Instance->M1AR = (uint32_t)IC_handle2.RX_MGR.dataPtr+IC_handle2.DMA_TransSize; //Set the DMA to be in circular mode and automatic filling the buffer
+		IC_handle2.huart->hdmarx->Instance->NDTR = IC_handle2.DMA_TransSize;
+		
+		//SET_BIT(USART6->CR3, USART_CR3_DMAT); //enable UART_DMA_request
+		
+		UART_DISABLE(IC_handle3.huart->Instance);
+		IC_handle3.huart->Init.BaudRate = *(uint32_t*)pbuf;
+		IC_handle3.huart->Init.WordLength = UART_WORDLENGTH_8B;
+		IC_handle3.huart->Init.StopBits = UART_STOPBITS_1;
+		IC_handle3.huart->Init.Parity = UART_PARITY_NONE;
+		IC_handle3.huart->Init.Mode = UART_MODE_TX_RX;
+		IC_handle3.huart->Init.HwFlowCtl = UART_HWCONTROL_NONE;
+		IC_handle3.huart->Init.OverSampling = UART_OVERSAMPLING_16;
+		IC_handle3.huart->Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+		IC_handle3.huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+		if (HAL_UART_Init(IC_handle3.huart) != HAL_OK)
+		{
+			Error_Handler();
+		}
+		//IC_handle.huart->Instance->CR1|=USART_CR1_RXNEIE;  //Enable RX interrput to receive commands
+		//configure USART4 DMA
+		UART_IONCOM_DMA_Init(&IC_handle3);
+		IC_handle3.huart->hdmarx->Instance->PAR = (uint32_t)&IONCOM_UART_RDR(IC_handle3.huart->Instance);
+		IC_handle3.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle3.RX_MGR.dataPtr; //Set the DMA to be in circular mode and automatic filling the buffer
+		IC_handle3.huart->hdmarx->Instance->M1AR = (uint32_t)IC_handle3.RX_MGR.dataPtr+IC_handle3.DMA_TransSize; //Set the DMA to be in circular mode and automatic filling the buffer
+		IC_handle3.huart->hdmarx->Instance->NDTR = IC_handle3.DMA_TransSize;
+		
+		//SET_BIT(USART6->CR3, USART_CR3_DMAT); //enable UART_DMA_request
+		
+		UART_DISABLE(IC_handle4.huart->Instance);
+		IC_handle4.huart->Init.BaudRate = *(uint32_t*)pbuf;
+		IC_handle4.huart->Init.WordLength = UART_WORDLENGTH_8B;
+		IC_handle4.huart->Init.StopBits = UART_STOPBITS_1;
+		IC_handle4.huart->Init.Parity = UART_PARITY_NONE;
+		IC_handle4.huart->Init.Mode = UART_MODE_TX_RX;
+		IC_handle4.huart->Init.HwFlowCtl = UART_HWCONTROL_NONE;
+		IC_handle4.huart->Init.OverSampling = UART_OVERSAMPLING_16;
+		IC_handle4.huart->Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+		IC_handle4.huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+		if (HAL_UART_Init(IC_handle4.huart) != HAL_OK)
+		{
+			Error_Handler();
+		}
+		//IC_handle.huart->Instance->CR1|=USART_CR1_RXNEIE;  //Enable RX interrput to receive commands
+		//configure USART4 DMA
+		UART_IONCOM_DMA_Init(&IC_handle4);
+		IC_handle4.huart->hdmarx->Instance->PAR = (uint32_t)&IONCOM_UART_RDR(IC_handle4.huart->Instance);
+		IC_handle4.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle4.RX_MGR.dataPtr; //Set the DMA to be in circular mode and automatic filling the buffer
+		IC_handle4.huart->hdmarx->Instance->M1AR = (uint32_t)IC_handle4.RX_MGR.dataPtr+IC_handle4.DMA_TransSize; //Set the DMA to be in circular mode and automatic filling the buffer
+		IC_handle4.huart->hdmarx->Instance->NDTR = IC_handle4.DMA_TransSize;
+		
+		//SET_BIT(USART6->CR3, USART_CR3_DMAT); //enable UART_DMA_request
+		dataMGR_init(&MGR_TX,(char*) data_buf_TX,sizeof(data_buf_TX));					//FIFO setup 
+		dataMGR_init(&MGR_RX1,(char*) data_buf_RX4,sizeof(data_buf_RX4));					//RX FIFO setup 
+		dataMGR_init(&MGR_RX2,(char*) data_buf_RX4,sizeof(data_buf_RX4));					//RX FIFO setup 
+		dataMGR_init(&MGR_RX3,(char*) data_buf_RX4,sizeof(data_buf_RX4));					//RX FIFO setup 
+		dataMGR_init(&MGR_RX4,(char*) data_buf_RX4,sizeof(data_buf_RX4));					//RX FIFO setup 
+		dataMGR_init(&MGR_CDC,(char*) data_buf_RX_CDC,sizeof(data_buf_RX_CDC));					//RX FIFO setup 
+		
+		DMA_DISABLE(IC_handle1.huart->hdmarx->Instance);
+		UART_DISABLE(IC_handle1.huart->Instance);
+		IC_handle1.huart->hdmarx->Instance->CR|=DMA_IT_TC|DMA_SxCR_DBM;  //ENABLE DMA INterrupt and double buffer mode
+		UART_IONCOM_Bank_Reset_DBM(&IC_handle1);
+		
+		DMA_DISABLE(IC_handle2.huart->hdmarx->Instance);
+		UART_DISABLE(IC_handle2.huart->Instance);
+		IC_handle2.huart->hdmarx->Instance->CR|=DMA_IT_TC|DMA_SxCR_DBM;  //ENABLE DMA INterrupt and double buffer mode
+		UART_IONCOM_Bank_Reset_DBM(&IC_handle2);
 
+		DMA_DISABLE(IC_handle3.huart->hdmarx->Instance);
+		UART_DISABLE(IC_handle3.huart->Instance);
+		IC_handle3.huart->hdmarx->Instance->CR|=DMA_IT_TC|DMA_SxCR_DBM;  //ENABLE DMA INterrupt and double buffer mode
+		UART_IONCOM_Bank_Reset_DBM(&IC_handle3);
+		
+		DMA_DISABLE(IC_handle4.huart->hdmarx->Instance);
+		UART_DISABLE(IC_handle4.huart->Instance);
+		IC_handle4.huart->hdmarx->Instance->CR|=DMA_IT_TC|DMA_SxCR_DBM;  //ENABLE DMA INterrupt and double buffer mode
+		UART_IONCOM_Bank_Reset_DBM(&IC_handle4);
+		
+		UART_IONCOM_DMA_Enable(&IC_handle1);
+		UART_IONCOM_DMA_Enable(&IC_handle2);
+		UART_IONCOM_DMA_Enable(&IC_handle3);		
+		UART_IONCOM_DMA_Enable(&IC_handle4);
+		
+		DMA_ENABLE(IC_handle1.huart->hdmarx->Instance);
+		UART_ENABLE(IC_handle1.huart->Instance);
+		DMA_ENABLE(IC_handle2.huart->hdmarx->Instance);
+		UART_ENABLE(IC_handle2.huart->Instance);
+		DMA_ENABLE(IC_handle3.huart->hdmarx->Instance);
+		UART_ENABLE(IC_handle3.huart->Instance);
+		DMA_ENABLE(IC_handle4.huart->hdmarx->Instance);
+		UART_ENABLE(IC_handle4.huart->Instance);
     break;
 
   case CDC_GET_LINE_CODING:

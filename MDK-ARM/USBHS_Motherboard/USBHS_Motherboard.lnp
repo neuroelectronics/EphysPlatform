@@ -1,5 +1,7 @@
 --cpu Cortex-M7.fp.sp
 "usbhs_motherboard\startup_stm32f723xx.o"
+"usbhs_motherboard\ce32_ioncom.o"
+"usbhs_motherboard\datamgr.o"
 "usbhs_motherboard\main.o"
 "usbhs_motherboard\usb_device.o"
 "usbhs_motherboard\usbd_conf.o"

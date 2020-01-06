@@ -43,3 +43,8 @@ usbhs_motherboard\stm32f7xx_it.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_
 usbhs_motherboard\stm32f7xx_it.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_ll_usb.h
 usbhs_motherboard\stm32f7xx_it.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_pcd_ex.h
 usbhs_motherboard\stm32f7xx_it.o: ../Inc/stm32f7xx_it.h
+usbhs_motherboard\stm32f7xx_it.o: ../Inc/dataMGR.h
+usbhs_motherboard\stm32f7xx_it.o: ../Inc/CE32_ioncom.h
+usbhs_motherboard\stm32f7xx_it.o: ../Inc/dataMGR.h
+usbhs_motherboard\stm32f7xx_it.o: ../Inc/CE32_macro.h
+usbhs_motherboard\stm32f7xx_it.o: ../Inc/CE32_macro.h

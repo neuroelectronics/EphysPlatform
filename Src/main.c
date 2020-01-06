@@ -24,7 +24,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "dataMGR.h"
+#include "CE32_ioncom.h"
+#include "usbd_cdc_if.h"
+#define CDC_BUF_SIZE 0x2000
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,6 +56,7 @@ SPI_HandleTypeDef hspi4;
 SPI_HandleTypeDef hspi5;
 
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim14;
 
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart8;
@@ -60,16 +64,60 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 UART_HandleTypeDef huart6;
+DMA_HandleTypeDef hdma_usart1_rx;
+DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart3_rx;
+DMA_HandleTypeDef hdma_usart6_rx;
 
 SDRAM_HandleTypeDef hsdram1;
 
 /* USER CODE BEGIN PV */
+int Nfail;
+int retries;
+int WaitCyc;
+uint8_t data_buf_RX1[BUF_SIZE];		// This records @ 20kHz x 32CH
+uint8_t data_buf_RX2[BUF_SIZE];		// This records @ 20kHz x 32CH
+uint8_t data_buf_RX3[BUF_SIZE];		// This records @ 20kHz x 32CH
+uint8_t data_buf_RX4[BUF_SIZE];		// This records @ 20kHz x 32CH
+uint8_t data_buf_TX[BUF_SIZE];		// This records @ 20kHz x 32CH
+uint8_t data_buf_RX_CDC[CDC_BUF_SIZE];
+uint16_t misc_DigiSig;
+uint8_t rec_cnt;
+uint32_t log_cnt;
+uint32_t test;
+uint32_t LED_CNT;
+uint32_t logIdx;	//Index of log in the CE32_systemLog struct
+uint32_t filePTR;	//recording pointer location (in 512B unit,real filelen=512*x)
+uint32_t updHeader;
+dataMGR MGR_TX;
+dataMGR MGR_RX1;
+dataMGR MGR_RX2;
+dataMGR MGR_RX3;
+dataMGR MGR_RX4;
+dataMGR MGR_CDC;
+dataMGR MGR_prev;
+dataMGR MGR_misc;
+dataMGR MGR_cmd;
+uint8_t HD32_sd_temp;
+
+//dataMGR PMGR;
+int freq;
+
+const uint16_t RX_size=1000;
+
+CE32_IONCOM_Handle IC_handle1;
+CE32_IONCOM_Handle IC_handle2;
+CE32_IONCOM_Handle IC_handle3;
+CE32_IONCOM_Handle IC_handle4;
+
+extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_FMC_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 static void MX_SPI1_Init(void);
@@ -84,8 +132,15 @@ static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USART6_UART_Init(void);
+static void MX_TIM14_Init(void);
 /* USER CODE BEGIN PFP */
 
+void PowerUp_IC();
+void Init_Buffer();
+void Init_Ioncom_Receiver();
+void RXdata_Indicator_Init();
+void RX_processor(CE32_IONCOM_Handle *IC_handle,int CH);
+void USB_SEND();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -128,6 +183,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_FMC_Init();
   MX_SDMMC1_SD_Init();
   MX_SPI1_Init();
@@ -142,9 +198,14 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
-  MX_USB_DEVICE_Init();
+  //MX_USB_DEVICE_Init();
+  MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
-	
+	PowerUp_IC();
+	Init_Buffer();
+	Init_Ioncom_Receiver();
+	MX_USB_DEVICE_Init();
+	RXdata_Indicator_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -152,7 +213,11 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+		RX_processor(&IC_handle1,0);
+		RX_processor(&IC_handle2,1);
+		RX_processor(&IC_handle3,2);
+		RX_processor(&IC_handle4,3);
+		USB_SEND();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -545,6 +610,37 @@ static void MX_TIM1_Init(void)
 }
 
 /**
+  * @brief TIM14 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM14_Init(void)
+{
+
+  /* USER CODE BEGIN TIM14_Init 0 */
+
+  /* USER CODE END TIM14_Init 0 */
+
+  /* USER CODE BEGIN TIM14_Init 1 */
+
+  /* USER CODE END TIM14_Init 1 */
+  htim14.Instance = TIM14;
+  htim14.Init.Prescaler = 21599;
+  htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim14.Init.Period = 1999;
+  htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM14_Init 2 */
+
+  /* USER CODE END TIM14_Init 2 */
+
+}
+
+/**
   * @brief UART4 Initialization Function
   * @param None
   * @retval None
@@ -754,6 +850,32 @@ static void MX_USART6_UART_Init(void)
 
 }
 
+/** 
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void) 
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 2, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  /* DMA2_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 3, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+  /* DMA2_Stream2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 4, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
+
+}
+
 /* FMC initialization function */
 static void MX_FMC_Init(void)
 {
@@ -892,7 +1014,132 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void PowerUp_IC()
+{
+	//Enable Power
+	HAL_GPIO_WritePin(VCC_EN_GPIO_Port,VCC_EN_Pin,GPIO_PIN_SET);	//Power Up intan
+	HAL_GPIO_WritePin(VEE_IC_EN_GPIO_Port,VEE_IC_EN_Pin,GPIO_PIN_SET);	//Power up IC transiver
+	HAL_GPIO_WritePin(VEE_EN_GPIO_Port,VEE_EN_Pin,GPIO_PIN_RESET); //Disable LVDS transiver
+}
+void Init_Buffer()
+{
+	dataMGR_init(&MGR_TX,(char*) data_buf_TX,sizeof(data_buf_TX));						//FIFO setup 
+	dataMGR_init(&MGR_RX1,(char*) data_buf_RX1,sizeof(data_buf_RX1));					//RX FIFO setup 
+	dataMGR_init(&MGR_RX2,(char*) data_buf_RX2,sizeof(data_buf_RX2));					//RX FIFO setup 
+	dataMGR_init(&MGR_RX3,(char*) data_buf_RX3,sizeof(data_buf_RX3));					//RX FIFO setup 
+	dataMGR_init(&MGR_RX4,(char*) data_buf_RX4,sizeof(data_buf_RX4));					//RX FIFO setup 
+	dataMGR_init(&MGR_CDC,(char*) data_buf_RX_CDC,sizeof(data_buf_RX_CDC));		//RX FIFO setup 
+}
 
+void Init_Ioncom_Receiver()
+{
+	IC_handle1.DMA_TotalBanks=4;
+	IC_handle1.DMA_TransSize=BUF_SIZE/IC_handle1.DMA_TotalBanks;
+	IC_handle1.huart=&huart1;
+	IC_handle1.IRQn=USART1_IRQn;
+	IC_handle1.huart->hdmarx->Instance=DMA2_Stream2;
+	IC_handle1.config|=(IONCOM_CONFIG_RXDMA);
+	CE32_Ioncom_Init(&IC_handle1,(char*)data_buf_RX1,sizeof(data_buf_RX1),(char*)data_buf_TX,(uint16_t)sizeof(data_buf_TX));
+	UART_IONCOM_DMA_Init(&IC_handle1);
+	UART_DISABLE(IC_handle1.huart->Instance);					//Disable UART temporarly to avoid interferece with initialization
+	IC_handle1.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle1.RX_MGR.dataPtr; //Set the DMA to be in circular mode and automatic filling the buffer
+	IC_handle1.huart->hdmarx->Instance->NDTR = IC_handle1.RX_MGR.dataSize;
+	
+	
+	IC_handle2.DMA_TotalBanks=4;
+	IC_handle2.DMA_TransSize=BUF_SIZE/IC_handle2.DMA_TotalBanks;
+	IC_handle2.huart=&huart2;
+	IC_handle2.IRQn=USART2_IRQn;
+	IC_handle2.huart->hdmarx->Instance=DMA1_Stream5;
+	IC_handle2.config|=(IONCOM_CONFIG_RXDMA);
+	CE32_Ioncom_Init(&IC_handle2,(char*)data_buf_RX2,sizeof(data_buf_RX2),(char*)data_buf_TX,(uint16_t)sizeof(data_buf_TX));
+	UART_IONCOM_DMA_Init(&IC_handle2);
+	UART_DISABLE(IC_handle2.huart->Instance);					//Disable UART temporarly to avoid interferece with initialization
+	IC_handle2.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle2.RX_MGR.dataPtr; //Set the DMA to be in circular mode and automatic filling the buffer
+	IC_handle2.huart->hdmarx->Instance->NDTR = IC_handle2.RX_MGR.dataSize;
+	
+	IC_handle3.DMA_TotalBanks=4;
+	IC_handle3.DMA_TransSize=BUF_SIZE/IC_handle3.DMA_TotalBanks;
+	IC_handle3.huart=&huart3;
+	IC_handle3.IRQn=USART3_IRQn;
+	IC_handle3.huart->hdmarx->Instance=DMA1_Stream1;
+	IC_handle3.config|=(IONCOM_CONFIG_RXDMA);
+	CE32_Ioncom_Init(&IC_handle3,(char*)data_buf_RX3,sizeof(data_buf_RX3),(char*)data_buf_TX,(uint16_t)sizeof(data_buf_TX));
+	UART_IONCOM_DMA_Init(&IC_handle3);
+	UART_DISABLE(IC_handle3.huart->Instance);					//Disable UART temporarly to avoid interferece with initialization
+	IC_handle3.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle3.RX_MGR.dataPtr; //Set the DMA to be in circular mode and automatic filling the buffer
+	IC_handle3.huart->hdmarx->Instance->NDTR = IC_handle3.RX_MGR.dataSize;
+	
+	IC_handle4.DMA_TotalBanks=4;
+	IC_handle4.DMA_TransSize=BUF_SIZE/IC_handle4.DMA_TotalBanks;
+	IC_handle4.huart=&huart6;
+	IC_handle4.IRQn=USART6_IRQn;
+	IC_handle4.huart->hdmarx->Instance=DMA2_Stream1;
+	IC_handle4.config|=(IONCOM_CONFIG_RXDMA);
+	CE32_Ioncom_Init(&IC_handle4,(char*)data_buf_RX4,sizeof(data_buf_RX4),(char*)data_buf_TX,(uint16_t)sizeof(data_buf_TX));
+	UART_IONCOM_DMA_Init(&IC_handle4);
+	UART_DISABLE(IC_handle4.huart->Instance);					//Disable UART temporarly to avoid interferece with initialization
+	IC_handle4.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle4.RX_MGR.dataPtr; //Set the DMA to be in circular mode and automatic filling the buffer
+	IC_handle4.huart->hdmarx->Instance->NDTR = IC_handle4.RX_MGR.dataSize;
+	//UART7->CR1|=USART_CR1_RXNEIE;  //Enable RX interrput to receive commands
+}
+
+void RXdata_Indicator_Init()
+{
+	TIM14->CR1|=TIM_CR1_CEN;	//Enable timer
+	TIM14->DIER|=TIM_DIER_UIE;//Enable update interrupt
+}
+
+void RX_processor(CE32_IONCOM_Handle *IC_handle,int CH)
+{
+	if(IC_handle->RX_MGR.bufferUsed[0]>=148)
+		{
+			if((uint8_t)dataMGR_deQueue_byte(&IC_handle->RX_MGR,0)==0x66)
+			{
+				if((uint8_t)dataMGR_deQueue_byte(&IC_handle->RX_MGR,0)==0x55)
+				{
+					if((uint8_t)dataMGR_deQueue_byte(&IC_handle->RX_MGR,0)==0x5d)
+					{
+						if((uint8_t)dataMGR_deQueue_byte(&IC_handle->RX_MGR,0)==0xd5)
+						{
+							HAL_GPIO_WritePin(GPIOD,GPIO_PIN_13>>CH,GPIO_PIN_SET);
+							dataMGR_enQueue_byte(&MGR_CDC,0x66);
+							dataMGR_enQueue_byte(&MGR_CDC,0x55);
+							dataMGR_enQueue_byte(&MGR_CDC,0x5d);
+							dataMGR_enQueue_byte(&MGR_CDC,CH);
+							for(int i=0;i<144;i++)
+							{
+								while(IC_handle->RX_MGR.bufferUsed[0]<=0)
+								{
+								}
+								//dataMGR_enQueue_byte(&MGR_CDC,0xAA);
+								uint8_t temp=(uint8_t)dataMGR_deQueue_byte(&IC_handle->RX_MGR,0);
+//								if(temp==0)
+//								{
+//									__nop();
+//								}
+								dataMGR_enQueue_byte(&MGR_CDC,temp);
+							}
+							
+							//break;
+						}
+					}
+				}
+			}
+		}
+}
+
+void USB_SEND()
+{
+	if(MGR_CDC.bufferUsed[0]>=CDC_BUF_SIZE/4)
+	{
+		int ByteToSend=CDC_BUF_SIZE/4;
+		if(CDC_Transmit_HS((uint8_t*)(data_buf_RX_CDC+MGR_CDC.outPTR[0]),ByteToSend)==USBD_OK)
+		{
+			dataMGR_deQueue(&MGR_CDC,ByteToSend,0);
+		}				
+	}
+}
 /* USER CODE END 4 */
 
 /**

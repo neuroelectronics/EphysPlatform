@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=D:/code/uC/EphysPlatform/Inc
+HeaderPath=C:/code/uC/EphysPlatform/Inc
 HeaderFiles=usb_device.h;usbd_conf.h;usbd_desc.h;usbd_cdc_if.h;stm32f7xx_it.h;stm32f7xx_hal_conf.h;main.h;
-SourcePath=D:/code/uC/EphysPlatform/Src
+SourcePath=C:/code/uC/EphysPlatform/Src
 SourceFiles=usb_device.c;usbd_conf.c;usbd_desc.c;usbd_cdc_if.c;stm32f7xx_it.c;stm32f7xx_hal_msp.c;main.c;
 
 [PreviousLibFiles]

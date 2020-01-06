@@ -23,6 +23,10 @@
 #include "stm32f7xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "dataMGR.h"
+#include "stm32f7xx_hal_dma.h"
+#include "CE32_ioncom.h"
+#include "CE32_macro.h"
 /* USER CODE END Includes */
   
 /* Private typedef -----------------------------------------------------------*/
@@ -42,6 +46,22 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
+extern uint8_t data_buf_RX1[BUF_SIZE];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_RX2[BUF_SIZE];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_RX3[BUF_SIZE];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_RX4[BUF_SIZE];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_TX[BUF_SIZE];		// This records @ 20kHz x 32CH
+
+extern dataMGR MGR_RX1;
+extern dataMGR MGR_RX2;
+extern dataMGR MGR_RX3;
+extern dataMGR MGR_RX4;
+extern dataMGR MGR_TX;
+
+extern CE32_IONCOM_Handle IC_handle1;
+extern CE32_IONCOM_Handle IC_handle2;
+extern CE32_IONCOM_Handle IC_handle3;
+extern CE32_IONCOM_Handle IC_handle4;
 
 /* USER CODE END PV */
 
@@ -58,6 +78,11 @@
 /* External variables --------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd_USB_OTG_HS;
 extern SD_HandleTypeDef hsd1;
+extern TIM_HandleTypeDef htim14;
+extern DMA_HandleTypeDef hdma_usart1_rx;
+extern DMA_HandleTypeDef hdma_usart2_rx;
+extern DMA_HandleTypeDef hdma_usart3_rx;
+extern DMA_HandleTypeDef hdma_usart6_rx;
 extern UART_HandleTypeDef huart4;
 extern UART_HandleTypeDef huart8;
 extern UART_HandleTypeDef huart1;
@@ -205,6 +230,58 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
+  * @brief This function handles DMA1 stream1 global interrupt.
+  */
+void DMA1_Stream1_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream1_IRQn 0 */
+	//USART3_RX
+	DMA_Base_Registers *regs = (DMA_Base_Registers *)  hdma_usart3_rx.StreamBaseAddress;
+	regs->IFCR = DMA_FLAG_TCIF0_4 << hdma_usart3_rx.StreamIndex;
+	regs->IFCR = DMA_FLAG_HTIF0_4<< hdma_usart3_rx.StreamIndex;
+	dataMGR_enQueue_Nbytes(&IC_handle3.RX_MGR,IC_handle3.DMA_TransSize);
+	UART_IONCOM_Bank_EnqueueBank(&IC_handle3);
+	if((IC_handle3.huart->hdmarx->Instance->CR&DMA_SxCR_CT)!=0) //Check which buffer is being used currently
+	{
+		IC_handle3.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle3.RX_MGR.dataPtr + IC_handle3.DMA_bank_in*(IC_handle3.DMA_TransSize); //Set the DMA to be in circular mode and automatic filling the buffer
+	}
+	else
+	{
+		IC_handle3.huart->hdmarx->Instance->M1AR = (uint32_t)IC_handle3.RX_MGR.dataPtr + IC_handle3.DMA_bank_in*(IC_handle3.DMA_TransSize); //Set the DMA to be in circular mode and automatic filling the buffer
+	}
+  /* USER CODE END DMA1_Stream1_IRQn 0 */
+  /* USER CODE BEGIN DMA1_Stream1_IRQn 1 */
+
+  /* USER CODE END DMA1_Stream1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA1 stream5 global interrupt.
+  */
+void DMA1_Stream5_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream5_IRQn 0 */
+	//USART2_RX
+	DMA_Base_Registers *regs = (DMA_Base_Registers *)  hdma_usart2_rx.StreamBaseAddress;
+	regs->IFCR = DMA_FLAG_TCIF0_4 << hdma_usart2_rx.StreamIndex;
+	regs->IFCR = DMA_FLAG_HTIF0_4<< hdma_usart2_rx.StreamIndex;
+	dataMGR_enQueue_Nbytes(&IC_handle2.RX_MGR,IC_handle2.DMA_TransSize);
+	UART_IONCOM_Bank_EnqueueBank(&IC_handle2);
+	if((IC_handle2.huart->hdmarx->Instance->CR&DMA_SxCR_CT)!=0) //Check which buffer is being used currently
+	{
+		IC_handle2.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle2.RX_MGR.dataPtr + IC_handle2.DMA_bank_in*(IC_handle2.DMA_TransSize); //Set the DMA to be in circular mode and automatic filling the buffer
+	}
+	else
+	{
+		IC_handle2.huart->hdmarx->Instance->M1AR = (uint32_t)IC_handle2.RX_MGR.dataPtr + IC_handle2.DMA_bank_in*(IC_handle2.DMA_TransSize); //Set the DMA to be in circular mode and automatic filling the buffer
+	}
+  /* USER CODE END DMA1_Stream5_IRQn 0 */
+  /* USER CODE BEGIN DMA1_Stream5_IRQn 1 */
+
+  /* USER CODE END DMA1_Stream5_IRQn 1 */
+}
+
+/**
   * @brief This function handles USART1 global interrupt.
   */
 void USART1_IRQHandler(void)
@@ -244,6 +321,20 @@ void USART3_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles TIM8 trigger and commutation interrupts and TIM14 global interrupt.
+  */
+void TIM8_TRG_COM_TIM14_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 0 */
+	TIM14->SR&=~TIM_SR_UIF;
+	HAL_GPIO_WritePin(MODE1_LED_GPIO_Port ,MODE1_LED_Pin|MODE2_LED_Pin|MODE3_LED_Pin|MODE4_LED_Pin,GPIO_PIN_RESET);	
+  /* USER CODE END TIM8_TRG_COM_TIM14_IRQn 0 */
+  /* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 1 */
+
+  /* USER CODE END TIM8_TRG_COM_TIM14_IRQn 1 */
+}
+
+/**
   * @brief This function handles SDMMC1 global interrupt.
   */
 void SDMMC1_IRQHandler(void)
@@ -267,6 +358,58 @@ void UART4_IRQHandler(void)
   /* USER CODE BEGIN UART4_IRQn 1 */
 
   /* USER CODE END UART4_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA2 stream1 global interrupt.
+  */
+void DMA2_Stream1_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Stream1_IRQn 0 */
+	//USART6_RX
+	DMA_Base_Registers *regs = (DMA_Base_Registers *)  hdma_usart6_rx.StreamBaseAddress;
+	regs->IFCR = DMA_FLAG_TCIF0_4 << hdma_usart6_rx.StreamIndex;
+	regs->IFCR = DMA_FLAG_HTIF0_4<< hdma_usart6_rx.StreamIndex;
+	dataMGR_enQueue_Nbytes(&IC_handle4.RX_MGR,IC_handle4.DMA_TransSize);
+	UART_IONCOM_Bank_EnqueueBank(&IC_handle4);
+	if((IC_handle4.huart->hdmarx->Instance->CR&DMA_SxCR_CT)!=0) //Check which buffer is being used currently
+	{
+		IC_handle4.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle4.RX_MGR.dataPtr + IC_handle4.DMA_bank_in*(IC_handle4.DMA_TransSize); //Set the DMA to be in circular mode and automatic filling the buffer
+	}
+	else
+	{
+		IC_handle4.huart->hdmarx->Instance->M1AR = (uint32_t)IC_handle4.RX_MGR.dataPtr + IC_handle4.DMA_bank_in*(IC_handle4.DMA_TransSize); //Set the DMA to be in circular mode and automatic filling the buffer
+	}
+  /* USER CODE END DMA2_Stream1_IRQn 0 */
+  /* USER CODE BEGIN DMA2_Stream1_IRQn 1 */
+
+  /* USER CODE END DMA2_Stream1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA2 stream2 global interrupt.
+  */
+void DMA2_Stream2_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Stream2_IRQn 0 */
+	//USART1_RX
+	DMA_Base_Registers *regs = (DMA_Base_Registers *)  hdma_usart1_rx.StreamBaseAddress;
+	regs->IFCR = DMA_FLAG_TCIF0_4 << hdma_usart1_rx.StreamIndex;
+	regs->IFCR = DMA_FLAG_HTIF0_4<< hdma_usart1_rx.StreamIndex;
+	dataMGR_enQueue_Nbytes(&IC_handle1.RX_MGR,IC_handle1.DMA_TransSize);
+	UART_IONCOM_Bank_EnqueueBank(&IC_handle1);
+	if((IC_handle1.huart->hdmarx->Instance->CR&DMA_SxCR_CT)!=0) //Check which buffer is being used currently
+	{
+		IC_handle1.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle1.RX_MGR.dataPtr + IC_handle1.DMA_bank_in*(IC_handle1.DMA_TransSize); //Set the DMA to be in circular mode and automatic filling the buffer
+	}
+	else
+	{
+		IC_handle1.huart->hdmarx->Instance->M1AR = (uint32_t)IC_handle1.RX_MGR.dataPtr + IC_handle1.DMA_bank_in*(IC_handle1.DMA_TransSize); //Set the DMA to be in circular mode and automatic filling the buffer
+	}
+  /* USER CODE END DMA2_Stream2_IRQn 0 */
+  /* USER CODE BEGIN DMA2_Stream2_IRQn 1 */
+
+  /* USER CODE END DMA2_Stream2_IRQn 1 */
 }
 
 /**

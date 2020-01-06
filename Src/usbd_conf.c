@@ -92,7 +92,7 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
     __HAL_RCC_USB_OTG_HS_ULPI_CLK_ENABLE();
 
     /* Peripheral interrupt init */
-    HAL_NVIC_SetPriority(OTG_HS_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(OTG_HS_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(OTG_HS_IRQn);
   /* USER CODE BEGIN USB_OTG_HS_MspInit 1 */
 
@@ -602,42 +602,6 @@ USBD_StatusTypeDef USBD_LL_PrepareReceive(USBD_HandleTypeDef *pdev, uint8_t ep_a
 uint32_t USBD_LL_GetRxDataSize(USBD_HandleTypeDef *pdev, uint8_t ep_addr)
 {
   return HAL_PCD_EP_GetRxCount((PCD_HandleTypeDef*) pdev->pData, ep_addr);
-}
-
-/**
-  * @brief  Send LPM message to user layer
-  * @param  hpcd: PCD handle
-  * @param  msg: LPM message
-  * @retval None
-  */
-void HAL_PCDEx_LPM_Callback(PCD_HandleTypeDef *hpcd, PCD_LPM_MsgTypeDef msg)
-{
-  switch (msg)
-  {
-  case PCD_LPM_L0_ACTIVE:
-    if (hpcd->Init.low_power_enable)
-    {
-      SystemClock_Config();
-      
-      /* Reset SLEEPDEEP bit of Cortex System Control Register. */
-      SCB->SCR &= (uint32_t)~((uint32_t)(SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk));
-    }
-    __HAL_PCD_UNGATE_PHYCLOCK(hpcd);
-    USBD_LL_Resume(hpcd->pData);
-    break;
-    
-  case PCD_LPM_L1_ACTIVE:
-    __HAL_PCD_GATE_PHYCLOCK(hpcd);
-    USBD_LL_Suspend(hpcd->pData);
-    
-    /* Enter in STOP mode. */
-    if (hpcd->Init.low_power_enable)
-    {   
-      /* Set SLEEPDEEP bit and SleepOnExit of Cortex System Control Register. */
-      SCB->SCR |= (uint32_t)((uint32_t)(SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk));
-    }
-    break;   
-  }
 }
 
 /**
