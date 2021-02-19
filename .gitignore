@@ -1,0 +1,10 @@
+*.lst
+*.aeria
+*.uvoptx
+*.uvprojx
+*.crf
+*.o
+*.axf
+*.htm
+*.map
+*.dep
