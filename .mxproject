@@ -7,8 +7,8 @@ HeaderPath=..\Drivers\STM32F7xx_HAL_Driver\Inc;..\Drivers\STM32F7xx_HAL_Driver\I
 CDefines=USE_HAL_DRIVER;STM32F723xx;USE_HAL_DRIVER;USE_HAL_DRIVER;
 
 [PreviousGenFiles]
-HeaderPath=D:/code/uC/EphysPlatform/Inc
+HeaderPath=C:/code/uC/Ephys_USBHS/Inc
 HeaderFiles=usb_device.h;usbd_conf.h;usbd_desc.h;usbd_cdc_if.h;stm32f7xx_it.h;stm32f7xx_hal_conf.h;main.h;
-SourcePath=D:/code/uC/EphysPlatform/Src
+SourcePath=C:/code/uC/Ephys_USBHS/Src
 SourceFiles=usb_device.c;usbd_conf.c;usbd_desc.c;usbd_cdc_if.c;stm32f7xx_it.c;stm32f7xx_hal_msp.c;main.c;
 

@@ -157,6 +157,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
+  
 
   /* Enable I-Cache---------------------------------------------------------*/
   SCB_EnableICache();
@@ -233,11 +234,11 @@ void SystemClock_Config(void)
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage
+  /** Configure the main internal regulator output voltage 
   */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-  /** Initializes the CPU, AHB and APB busses clocks
+  /** Initializes the CPU, AHB and APB busses clocks 
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
@@ -251,20 +252,20 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  /** Activate the Over-Drive mode
+  /** Activate the Over-Drive mode 
   */
   if (HAL_PWREx_EnableOverDrive() != HAL_OK)
   {
     Error_Handler();
   }
-  /** Initializes the CPU, AHB and APB busses clocks
+  /** Initializes the CPU, AHB and APB busses clocks 
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_6) != HAL_OK)
   {
@@ -734,7 +735,8 @@ static void MX_USART1_UART_Init(void)
   huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart1.Init.OverSampling = UART_OVERSAMPLING_16;
   huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_RXOVERRUNDISABLE_INIT;
+  huart1.AdvancedInit.OverrunDisable = UART_ADVFEATURE_OVERRUN_DISABLE;
   if (HAL_UART_Init(&huart1) != HAL_OK)
   {
     Error_Handler();
@@ -769,7 +771,8 @@ static void MX_USART2_UART_Init(void)
   huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
   huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_RXOVERRUNDISABLE_INIT;
+  huart2.AdvancedInit.OverrunDisable = UART_ADVFEATURE_OVERRUN_DISABLE;
   if (HAL_UART_Init(&huart2) != HAL_OK)
   {
     Error_Handler();
@@ -804,7 +807,8 @@ static void MX_USART3_UART_Init(void)
   huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart3.Init.OverSampling = UART_OVERSAMPLING_16;
   huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_RXOVERRUNDISABLE_INIT;
+  huart3.AdvancedInit.OverrunDisable = UART_ADVFEATURE_OVERRUN_DISABLE;
   if (HAL_UART_Init(&huart3) != HAL_OK)
   {
     Error_Handler();
@@ -839,7 +843,8 @@ static void MX_USART6_UART_Init(void)
   huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart6.Init.OverSampling = UART_OVERSAMPLING_16;
   huart6.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart6.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  huart6.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_RXOVERRUNDISABLE_INIT;
+  huart6.AdvancedInit.OverrunDisable = UART_ADVFEATURE_OVERRUN_DISABLE;
   if (HAL_UART_Init(&huart6) != HAL_OK)
   {
     Error_Handler();
@@ -850,10 +855,10 @@ static void MX_USART6_UART_Init(void)
 
 }
 
-/**
+/** 
   * Enable DMA controller clock
   */
-static void MX_DMA_Init(void)
+static void MX_DMA_Init(void) 
 {
 
   /* DMA controller clock enable */
@@ -943,7 +948,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, HJ_MODE_Pin|HJ_ROLE_Pin|HJ_STATE_Pin|LED_BUF_75_Pin
+  HAL_GPIO_WritePin(GPIOC, HJ_MODE_Pin|HJ_ROLE_Pin|HJ_STATE_Pin|LED_BUF_75_Pin 
                           |LED_BUF_50_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -953,19 +958,19 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_BUF_100_GPIO_Port, LED_BUF_100_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LED_BUF_25_Pin|VEE_IC_EN_Pin|VEE_EN_Pin|VCC_EN_Pin
+  HAL_GPIO_WritePin(GPIOB, LED_BUF_25_Pin|VEE_IC_EN_Pin|VEE_EN_Pin|VCC_EN_Pin 
                           |GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(NBL_0_GPIO_Port, NBL_0_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, MODE4_LED_Pin|MODE3_LED_Pin|MODE2_LED_Pin|MODE1_LED_Pin
+  HAL_GPIO_WritePin(GPIOD, MODE4_LED_Pin|MODE3_LED_Pin|MODE2_LED_Pin|MODE1_LED_Pin 
                           |SD_LED_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : HJ_MODE_Pin HJ_ROLE_Pin HJ_STATE_Pin LED_BUF_75_Pin
+  /*Configure GPIO pins : HJ_MODE_Pin HJ_ROLE_Pin HJ_STATE_Pin LED_BUF_75_Pin 
                            LED_BUF_50_Pin */
-  GPIO_InitStruct.Pin = HJ_MODE_Pin|HJ_ROLE_Pin|HJ_STATE_Pin|LED_BUF_75_Pin
+  GPIO_InitStruct.Pin = HJ_MODE_Pin|HJ_ROLE_Pin|HJ_STATE_Pin|LED_BUF_75_Pin 
                           |LED_BUF_50_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -986,9 +991,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED_BUF_100_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED_BUF_25_Pin VEE_IC_EN_Pin VEE_EN_Pin VCC_EN_Pin
+  /*Configure GPIO pins : LED_BUF_25_Pin VEE_IC_EN_Pin VEE_EN_Pin VCC_EN_Pin 
                            PB9 */
-  GPIO_InitStruct.Pin = LED_BUF_25_Pin|VEE_IC_EN_Pin|VEE_EN_Pin|VCC_EN_Pin
+  GPIO_InitStruct.Pin = LED_BUF_25_Pin|VEE_IC_EN_Pin|VEE_EN_Pin|VCC_EN_Pin 
                           |GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -1002,9 +1007,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(NBL_0_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : MODE4_LED_Pin MODE3_LED_Pin MODE2_LED_Pin MODE1_LED_Pin
+  /*Configure GPIO pins : MODE4_LED_Pin MODE3_LED_Pin MODE2_LED_Pin MODE1_LED_Pin 
                            SD_LED_Pin */
-  GPIO_InitStruct.Pin = MODE4_LED_Pin|MODE3_LED_Pin|MODE2_LED_Pin|MODE1_LED_Pin
+  GPIO_InitStruct.Pin = MODE4_LED_Pin|MODE3_LED_Pin|MODE2_LED_Pin|MODE1_LED_Pin 
                           |SD_LED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -1043,7 +1048,7 @@ void Init_Ioncom_Receiver()
 	UART_IONCOM_DMA_Init(&IC_handle1);
 	UART_DISABLE(IC_handle1.huart->Instance);					//Disable UART temporarly to avoid interferece with initialization
 	IC_handle1.huart->hdmarx->Instance->M0AR = (uint32_t)IC_handle1.RX_MGR.dataPtr; //Set the DMA to be in circular mode and automatic filling the buffer
-	IC_handle1.huart->hdmarx->Instance->NDTR = IC_handle1.RX_MGR.dataSize/4;
+	IC_handle1.huart->hdmarx->Instance->NDTR = IC_handle1.RX_MGR.dataSize;
 	
 	
 	IC_handle2.DMA_TotalBanks=4;
@@ -1163,7 +1168,7 @@ void Error_Handler(void)
   * @retval None
   */
 void assert_failed(uint8_t *file, uint32_t line)
-{
+{ 
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
