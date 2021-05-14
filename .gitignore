@@ -30,3 +30,4 @@ Drivers/CMSIS/NN/Examples/ARM/arm_nn_examples/cifar10/readme.txt
 Drivers/CMSIS/NN/Examples/ARM/arm_nn_examples/gru/readme.txt
 Drivers/CMSIS/NN/NN_Lib_Tests/nn_test/readme.txt
 *.lst
+*.d
