@@ -58,3 +58,10 @@ usbhs_motherboard\main.o: ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/us
 usbhs_motherboard\main.o: ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h
 usbhs_motherboard\main.o: ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h
 usbhs_motherboard\main.o: ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h
+usbhs_motherboard\main.o: ../Inc/CE32_HJ580.h
+usbhs_motherboard\main.o: ../Inc/dataMGR.h
+usbhs_motherboard\main.o: ../Inc/CE32_macro.h
+usbhs_motherboard\main.o: ../Inc/CE32_UART_INTERCOM.h
+usbhs_motherboard\main.o: ../Inc/CE32_macro.h
+usbhs_motherboard\main.o: ../Inc/CE32_COMMAND.h
+usbhs_motherboard\main.o: ../Inc/CE32_macro.h

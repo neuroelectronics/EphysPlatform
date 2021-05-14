@@ -27,6 +27,7 @@
 #include "dataMGR.h"
 #include "CE32_ioncom.h"
 #include "usbd_cdc_if.h"
+#include "CE32_HJ580.h"
 #define CDC_BUF_SIZE 0x2000
 /* USER CODE END Includes */
 
@@ -110,6 +111,16 @@ CE32_IONCOM_Handle IC_handle2;
 CE32_IONCOM_Handle IC_handle3;
 CE32_IONCOM_Handle IC_handle4;
 
+CE32_HJ580_Handle BLE_handle;
+
+char prev_buf[PREV_SIZE];
+uint8_t BLE_RX_buf[HJ_CMD_BUFSIZE*HJ_CMD_SEQ];
+char MAC[7];
+char DeviceName[50]={"CCEE3322__AADDVV"};
+char AdvData[50]={""};
+uint16_t ConnMin;
+uint16_t ConnMax;
+
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* USER CODE END PV */
@@ -141,6 +152,8 @@ void Init_Ioncom_Receiver();
 void RXdata_Indicator_Init();
 void RX_processor(CE32_IONCOM_Handle *IC_handle,int CH);
 void USB_SEND();
+
+void Init_HJ580();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -157,7 +170,6 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
-  
 
   /* Enable I-Cache---------------------------------------------------------*/
   SCB_EnableICache();
@@ -198,7 +210,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
-  //MX_USB_DEVICE_Init();
+  MX_USB_DEVICE_Init();
   MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
 	PowerUp_IC();
@@ -206,6 +218,8 @@ int main(void)
 	Init_Ioncom_Receiver();
 	MX_USB_DEVICE_Init();
 	RXdata_Indicator_Init();
+	
+	Init_HJ580();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -215,10 +229,20 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		RX_processor(&IC_handle1,0);
-		RX_processor(&IC_handle2,1);
-		RX_processor(&IC_handle3,2);
-		RX_processor(&IC_handle4,3);
+//		RX_processor(&IC_handle1,0);
+//		RX_processor(&IC_handle2,1);
+//		RX_processor(&IC_handle3,2);
+//		RX_processor(&IC_handle4,3);
+		CE32_HJ_READRSSI(&BLE_handle);
+		HAL_Delay(500);
+		if(HAL_GPIO_ReadPin(HJ_STATE_GPIO_Port,HJ_STATE_Pin)==0)
+		{
+			PIN_SET(BLE_LED);
+		}
+		else
+		{
+			PIN_RESET(BLE_LED);
+		}
 		USB_SEND();
   }
   /* USER CODE END 3 */
@@ -948,7 +972,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, HJ_MODE_Pin|HJ_ROLE_Pin|HJ_STATE_Pin|LED_BUF_75_Pin 
+  HAL_GPIO_WritePin(GPIOE, HJ_RST_Pin|HJ_WAKE_Pin|HJ_DRDY_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, HJ_CONFIG_Pin|HJ_ROLE_Pin|HJ_STATE_Pin|LED_BUF_75_Pin 
                           |LED_BUF_50_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -968,9 +995,16 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOD, MODE4_LED_Pin|MODE3_LED_Pin|MODE2_LED_Pin|MODE1_LED_Pin 
                           |SD_LED_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : HJ_MODE_Pin HJ_ROLE_Pin HJ_STATE_Pin LED_BUF_75_Pin 
+  /*Configure GPIO pins : HJ_RST_Pin HJ_WAKE_Pin HJ_DRDY_Pin */
+  GPIO_InitStruct.Pin = HJ_RST_Pin|HJ_WAKE_Pin|HJ_DRDY_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : HJ_CONFIG_Pin HJ_ROLE_Pin HJ_STATE_Pin LED_BUF_75_Pin 
                            LED_BUF_50_Pin */
-  GPIO_InitStruct.Pin = HJ_MODE_Pin|HJ_ROLE_Pin|HJ_STATE_Pin|LED_BUF_75_Pin 
+  GPIO_InitStruct.Pin = HJ_CONFIG_Pin|HJ_ROLE_Pin|HJ_STATE_Pin|LED_BUF_75_Pin 
                           |LED_BUF_50_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -1144,6 +1178,25 @@ void USB_SEND()
 			dataMGR_deQueue(&MGR_CDC,ByteToSend,0);
 		}				
 	}
+}
+
+void Init_HJ580()
+{
+		//Initialize Bluetooth module
+	BLE_handle.baud=19200;
+	BLE_handle.stop_bit=HJ580_PARITY_NA;
+	CE32_INTERCOM_Init((CE32_INTERCOM_Handle*)&BLE_handle,&huart8);
+	memcpy(BLE_handle.DeviceName,DeviceName,sizeof(DeviceName));
+	PIN_RESET(HJ_ROLE);
+	PIN_RESET(HJ_RST);
+	PIN_RESET(HJ_WAKE);
+	
+	HAL_Delay(100); //Wait module to start up
+	int resp=CE32_HJ_Init_Master(&BLE_handle,(char*)BLE_RX_buf,RX_size,(char*)prev_buf,(uint16_t)PREV_SIZE);
+	//resp=0;//Manual Override
+	//UART_DMA_Init();
+	HJ_UART->CR1|=USART_CR1_RXNEIE;  //Enable RX interrput to receive commands
+	UART_ENABLE(HJ_UART);					//Disable UART temporarly to avoid interferece with initialization
 }
 /* USER CODE END 4 */
 

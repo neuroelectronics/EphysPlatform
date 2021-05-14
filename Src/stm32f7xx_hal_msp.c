@@ -641,7 +641,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     hdma_usart1_rx.Init.Mode = DMA_NORMAL;
     hdma_usart1_rx.Init.Priority = DMA_PRIORITY_VERY_HIGH;
     hdma_usart1_rx.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
-    hdma_usart1_rx.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_1QUARTERFULL;
+    hdma_usart1_rx.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_HALFFULL;
     hdma_usart1_rx.Init.MemBurst = DMA_MBURST_SINGLE;
     hdma_usart1_rx.Init.PeriphBurst = DMA_PBURST_SINGLE;
     if (HAL_DMA_Init(&hdma_usart1_rx) != HAL_OK)
@@ -959,6 +959,7 @@ static void HAL_FMC_MspInit(void){
     return;
   }
   FMC_Initialized = 1;
+
   /* Peripheral clock enable */
   __HAL_RCC_FMC_CLK_ENABLE();
   

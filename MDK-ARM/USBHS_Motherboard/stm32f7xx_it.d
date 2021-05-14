@@ -48,3 +48,10 @@ usbhs_motherboard\stm32f7xx_it.o: ../Inc/CE32_ioncom.h
 usbhs_motherboard\stm32f7xx_it.o: ../Inc/dataMGR.h
 usbhs_motherboard\stm32f7xx_it.o: ../Inc/CE32_macro.h
 usbhs_motherboard\stm32f7xx_it.o: ../Inc/CE32_macro.h
+usbhs_motherboard\stm32f7xx_it.o: ../Inc/CE32_HJ580.h
+usbhs_motherboard\stm32f7xx_it.o: ../Inc/dataMGR.h
+usbhs_motherboard\stm32f7xx_it.o: ../Inc/CE32_macro.h
+usbhs_motherboard\stm32f7xx_it.o: ../Inc/CE32_UART_INTERCOM.h
+usbhs_motherboard\stm32f7xx_it.o: ../Inc/CE32_macro.h
+usbhs_motherboard\stm32f7xx_it.o: ../Inc/CE32_COMMAND.h
+usbhs_motherboard\stm32f7xx_it.o: ../Inc/CE32_macro.h

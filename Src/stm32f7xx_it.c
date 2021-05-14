@@ -27,6 +27,7 @@
 #include "stm32f7xx_hal_dma.h"
 #include "CE32_ioncom.h"
 #include "CE32_macro.h"
+#include "CE32_HJ580.h"
 /* USER CODE END Includes */
   
 /* Private typedef -----------------------------------------------------------*/
@@ -62,6 +63,8 @@ extern CE32_IONCOM_Handle IC_handle1;
 extern CE32_IONCOM_Handle IC_handle2;
 extern CE32_IONCOM_Handle IC_handle3;
 extern CE32_IONCOM_Handle IC_handle4;
+
+extern CE32_HJ580_Handle BLE_handle;
 
 /* USER CODE END PV */
 
@@ -445,6 +448,16 @@ void OTG_HS_IRQHandler(void)
 void UART8_IRQHandler(void)
 {
   /* USER CODE BEGIN UART8_IRQn 0 */
+	if(HAL_GPIO_ReadPin(HJ_CONFIG_GPIO_Port,HJ_CONFIG_Pin)==GPIO_PIN_RESET)					// IF in HJ580 Config mode
+	{
+		CE32_HJ580_RX_CONFIG_ISR(&BLE_handle);
+		CE32_HJ580_TX_CONFIG_ISR(&BLE_handle);
+	}
+	else
+	{
+		CE32_HJ580_RX_ISR(&BLE_handle);
+		CE32_INTERCOM_TX_ISR((CE32_INTERCOM_Handle*)&BLE_handle);
+	}
 
   /* USER CODE END UART8_IRQn 0 */
   /* USER CODE BEGIN UART8_IRQn 1 */

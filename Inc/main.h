@@ -60,8 +60,14 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define HJ_MODE_Pin GPIO_PIN_13
-#define HJ_MODE_GPIO_Port GPIOC
+#define HJ_RST_Pin GPIO_PIN_3
+#define HJ_RST_GPIO_Port GPIOE
+#define HJ_WAKE_Pin GPIO_PIN_4
+#define HJ_WAKE_GPIO_Port GPIOE
+#define HJ_DRDY_Pin GPIO_PIN_5
+#define HJ_DRDY_GPIO_Port GPIOE
+#define HJ_CONFIG_Pin GPIO_PIN_13
+#define HJ_CONFIG_GPIO_Port GPIOC
 #define HJ_ROLE_Pin GPIO_PIN_14
 #define HJ_ROLE_GPIO_Port GPIOC
 #define HJ_STATE_Pin GPIO_PIN_15
