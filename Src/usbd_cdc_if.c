@@ -376,12 +376,12 @@ static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 		
 		DMA_ENABLE(IC_handle1.huart->hdmarx->Instance);
 		UART_ENABLE(IC_handle1.huart->Instance);
-//		DMA_ENABLE(IC_handle2.huart->hdmarx->Instance);
-//		UART_ENABLE(IC_handle2.huart->Instance);
-//		DMA_ENABLE(IC_handle3.huart->hdmarx->Instance);
-//		UART_ENABLE(IC_handle3.huart->Instance);
-//		DMA_ENABLE(IC_handle4.huart->hdmarx->Instance);
-//		UART_ENABLE(IC_handle4.huart->Instance);
+		DMA_ENABLE(IC_handle2.huart->hdmarx->Instance);
+		UART_ENABLE(IC_handle2.huart->Instance);
+		DMA_ENABLE(IC_handle3.huart->hdmarx->Instance);
+		UART_ENABLE(IC_handle3.huart->Instance);
+		DMA_ENABLE(IC_handle4.huart->hdmarx->Instance);
+		UART_ENABLE(IC_handle4.huart->Instance);
     break;
 
   case CDC_GET_LINE_CODING:

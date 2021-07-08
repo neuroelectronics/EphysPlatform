@@ -202,6 +202,7 @@ int main(void)
   MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
 	PowerUp_IC();
+	//HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON,PWR_STOPENTRY_WFI); //Enter STOP mode for debug
 	Init_Buffer();
 	Init_Ioncom_Receiver();
 	MX_USB_DEVICE_Init();
@@ -216,8 +217,8 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 		RX_processor(&IC_handle1,0);
-		RX_processor(&IC_handle2,1);
-		RX_processor(&IC_handle3,2);
+		//RX_processor(&IC_handle2,1);
+		//RX_processor(&IC_handle3,2);
 		RX_processor(&IC_handle4,3);
 		USB_SEND();
   }
