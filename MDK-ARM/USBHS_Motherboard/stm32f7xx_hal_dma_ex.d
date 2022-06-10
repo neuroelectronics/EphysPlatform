@@ -22,6 +22,8 @@ usbhs_motherboard\stm32f7xx_hal_dma_ex.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/st
 usbhs_motherboard\stm32f7xx_hal_dma_ex.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_dma.h
 usbhs_motherboard\stm32f7xx_hal_dma_ex.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_dma_ex.h
 usbhs_motherboard\stm32f7xx_hal_dma_ex.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_cortex.h
+usbhs_motherboard\stm32f7xx_hal_dma_ex.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_adc.h
+usbhs_motherboard\stm32f7xx_hal_dma_ex.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_adc_ex.h
 usbhs_motherboard\stm32f7xx_hal_dma_ex.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_flash.h
 usbhs_motherboard\stm32f7xx_hal_dma_ex.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_flash_ex.h
 usbhs_motherboard\stm32f7xx_hal_dma_ex.o: ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_sdram.h

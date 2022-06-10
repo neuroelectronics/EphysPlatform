@@ -11,6 +11,17 @@
   *           + Peripheral Control functions
   *           + Peripheral State functions
   *
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2017 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
   @verbatim
   ==============================================================================
               ##### Backup Domain Operating Condition #####
@@ -108,9 +119,9 @@
 
   The compilation define  USE_HAL_RTC_REGISTER_CALLBACKS when set to 1
   allows the user to configure dynamically the driver callbacks.
-  Use Function @ref HAL_RTC_RegisterCallback() to register an interrupt callback.
+  Use Function HAL_RTC_RegisterCallback() to register an interrupt callback.
 
-  Function @ref HAL_RTC_RegisterCallback() allows to register following callbacks:
+  Function HAL_RTC_RegisterCallback() allows to register following callbacks:
     (+) AlarmAEventCallback          : RTC Alarm A Event callback.
     (+) AlarmBEventCallback          : RTC Alarm B Event callback.
     (+) TimeStampEventCallback       : RTC TimeStamp Event callback.
@@ -123,9 +134,9 @@
   This function takes as parameters the HAL peripheral handle, the Callback ID
   and a pointer to the user callback function.
 
-  Use function @ref HAL_RTC_UnRegisterCallback() to reset a callback to the default
+  Use function HAL_RTC_UnRegisterCallback() to reset a callback to the default
   weak function.
-  @ref HAL_RTC_UnRegisterCallback() takes as parameters the HAL peripheral handle,
+  HAL_RTC_UnRegisterCallback() takes as parameters the HAL peripheral handle,
   and the Callback ID.
   This function allows to reset following callbacks:
     (+) AlarmAEventCallback          : RTC Alarm A Event callback.
@@ -138,13 +149,13 @@
     (+) MspInitCallback              : RTC MspInit callback.
     (+) MspDeInitCallback            : RTC MspDeInit callback.
 
-  By default, after the @ref HAL_RTC_Init() and when the state is HAL_RTC_STATE_RESET,
+  By default, after the HAL_RTC_Init() and when the state is HAL_RTC_STATE_RESET,
   all callbacks are set to the corresponding weak functions :
-  examples @ref AlarmAEventCallback(), @ref WakeUpTimerEventCallback().
+  examples AlarmAEventCallback(), WakeUpTimerEventCallback().
   Exception done for MspInit and MspDeInit callbacks that are reset to the legacy weak function
-  in the @ref HAL_RTC_Init()/@ref HAL_RTC_DeInit() only when these callbacks are null
+  in the HAL_RTC_Init()/HAL_RTC_DeInit() only when these callbacks are null
   (not registered beforehand).
-  If not, MspInit or MspDeInit are not null, @ref HAL_RTC_Init()/@ref HAL_RTC_DeInit()
+  If not, MspInit or MspDeInit are not null, HAL_RTC_Init()/HAL_RTC_DeInit()
   keep and use the user MspInit/MspDeInit callbacks (registered beforehand)
 
   Callbacks can be registered/unregistered in HAL_RTC_STATE_READY state only.
@@ -152,25 +163,13 @@
   in HAL_RTC_STATE_READY or HAL_RTC_STATE_RESET state,
   thus registered (user) MspInit/DeInit callbacks can be used during the Init/DeInit.
   In that case first register the MspInit/MspDeInit user callbacks
-  using @ref HAL_RTC_RegisterCallback() before calling @ref HAL_RTC_DeInit()
-  or @ref HAL_RTC_Init() function.
+  using HAL_RTC_RegisterCallback() before calling HAL_RTC_DeInit()
+  or HAL_RTC_Init() function.
 
   When The compilation define USE_HAL_RTC_REGISTER_CALLBACKS is set to 0 or
   not defined, the callback registration feature is not available and all callbacks
   are set to the corresponding weak functions.
    @endverbatim
-
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2017 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
   ******************************************************************************
   */
 
@@ -323,7 +322,19 @@ HAL_StatusTypeDef HAL_RTC_Init(RTC_HandleTypeDef *hrtc)
 
     /* Exit Initialization mode */
     hrtc->Instance->ISR &= (uint32_t)~RTC_ISR_INIT;
+    /* If  CR_BYPSHAD bit = 0, wait for synchro else this check is not needed */
+    if((hrtc->Instance->CR & RTC_CR_BYPSHAD) == RESET)
+    {
+      if(HAL_RTC_WaitForSynchro(hrtc) != HAL_OK)
+      {
+        /* Enable the write protection for RTC registers */
+        __HAL_RTC_WRITEPROTECTION_ENABLE(hrtc);
 
+        hrtc->State = HAL_RTC_STATE_ERROR;
+
+        return HAL_ERROR;
+      }
+    }
     hrtc->Instance->OR &= (uint32_t)~RTC_OR_ALARMTYPE;
     hrtc->Instance->OR |= (uint32_t)(hrtc->Init.OutPutType);
 
@@ -799,10 +810,10 @@ HAL_StatusTypeDef HAL_RTC_SetTime(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef *sTim
     /* Set the RTC_TR register */
     hrtc->Instance->TR = (uint32_t)(tmpreg & RTC_TR_RESERVED_MASK);
 
-    /* Clear the bits to be configured */
+    /* This interface is deprecated. To manage Daylight Saving Time, please use HAL_RTC_DST_xxx functions */
     hrtc->Instance->CR &= (uint32_t)~RTC_CR_BKP;
 
-    /* Configure the RTC_CR register */
+    /* This interface is deprecated. To manage Daylight Saving Time, please use HAL_RTC_DST_xxx functions */
     hrtc->Instance->CR |= (uint32_t)(sTime->DayLightSaving | sTime->StoreOperation);
 
     /* Exit Initialization mode */
@@ -1586,10 +1597,11 @@ HAL_StatusTypeDef HAL_RTC_GetAlarm(RTC_HandleTypeDef *hrtc, RTC_AlarmTypeDef *sA
   */
 void HAL_RTC_AlarmIRQHandler(RTC_HandleTypeDef* hrtc)
 {
-  if(__HAL_RTC_ALARM_GET_IT(hrtc, RTC_IT_ALRA))
+  /* Get the AlarmA interrupt source enable status */
+  if(__HAL_RTC_ALARM_GET_IT_SOURCE(hrtc, RTC_IT_ALRA) != (uint32_t)RESET)
   {
-    /* Get the status of the Interrupt */
-    if((uint32_t)(hrtc->Instance->CR & RTC_IT_ALRA) != (uint32_t)RESET)
+    /* Get the pending status of the AlarmA Interrupt */
+    if(__HAL_RTC_ALARM_GET_FLAG(hrtc, RTC_FLAG_ALRAF) != (uint32_t)RESET)
     {
       /* AlarmA callback */
     #if (USE_HAL_RTC_REGISTER_CALLBACKS == 1)
@@ -1598,15 +1610,16 @@ void HAL_RTC_AlarmIRQHandler(RTC_HandleTypeDef* hrtc)
       HAL_RTC_AlarmAEventCallback(hrtc);
     #endif /* USE_HAL_RTC_REGISTER_CALLBACKS */
 
-      /* Clear the Alarm interrupt pending bit */
+      /* Clear the AlarmA interrupt pending bit */
       __HAL_RTC_ALARM_CLEAR_FLAG(hrtc,RTC_FLAG_ALRAF);
     }
   }
 
-  if(__HAL_RTC_ALARM_GET_IT(hrtc, RTC_IT_ALRB))
+  /* Get the AlarmB interrupt source enable status */
+  if(__HAL_RTC_ALARM_GET_IT_SOURCE(hrtc, RTC_IT_ALRB) != (uint32_t)RESET)
   {
-    /* Get the status of the Interrupt */
-    if((uint32_t)(hrtc->Instance->CR & RTC_IT_ALRB) != (uint32_t)RESET)
+    /* Get the pending status of the AlarmB Interrupt */
+    if(__HAL_RTC_ALARM_GET_FLAG(hrtc, RTC_FLAG_ALRBF) != (uint32_t)RESET)
     {
       /* AlarmB callback */
     #if (USE_HAL_RTC_REGISTER_CALLBACKS == 1)
@@ -1615,7 +1628,7 @@ void HAL_RTC_AlarmIRQHandler(RTC_HandleTypeDef* hrtc)
       HAL_RTCEx_AlarmBEventCallback(hrtc);
     #endif /* USE_HAL_RTC_REGISTER_CALLBACKS */
 
-      /* Clear the Alarm interrupt pending bit */
+      /* Clear the AlarmB interrupt pending bit */
       __HAL_RTC_ALARM_CLEAR_FLAG(hrtc,RTC_FLAG_ALRBF);
     }
   }
@@ -1764,6 +1777,67 @@ HAL_RTCStateTypeDef HAL_RTC_GetState(RTC_HandleTypeDef* hrtc)
 }
 
 /**
+  * @brief  Daylight Saving Time, Add one hour to the calendar in one single operation
+  *         without going through the initialization procedure.
+  * @param  hrtc RTC handle
+  * @retval None
+  */
+void HAL_RTC_DST_Add1Hour(RTC_HandleTypeDef *hrtc)
+{
+  __HAL_RTC_WRITEPROTECTION_DISABLE(hrtc);
+  SET_BIT(hrtc->Instance->CR, RTC_CR_ADD1H);
+  __HAL_RTC_WRITEPROTECTION_ENABLE(hrtc);
+}
+
+/**
+  * @brief  Daylight Saving Time, Subtract one hour from the calendar in one
+  *         single operation without going through the initialization procedure.
+  * @param  hrtc RTC handle
+  * @retval None
+  */
+void HAL_RTC_DST_Sub1Hour(RTC_HandleTypeDef *hrtc)
+{
+  __HAL_RTC_WRITEPROTECTION_DISABLE(hrtc);
+  SET_BIT(hrtc->Instance->CR, RTC_CR_SUB1H);
+  __HAL_RTC_WRITEPROTECTION_ENABLE(hrtc);
+}
+
+/**
+  * @brief  Daylight Saving Time, Set the store operation bit.
+  * @note   It can be used by the software in order to memorize the DST status.
+  * @param  hrtc RTC handle
+  * @retval None
+  */
+void HAL_RTC_DST_SetStoreOperation(RTC_HandleTypeDef *hrtc)
+{
+  __HAL_RTC_WRITEPROTECTION_DISABLE(hrtc);
+  SET_BIT(hrtc->Instance->CR, RTC_CR_BKP);
+  __HAL_RTC_WRITEPROTECTION_ENABLE(hrtc);
+}
+
+/**
+  * @brief  Daylight Saving Time, Clear the store operation bit.
+  * @param  hrtc RTC handle
+  * @retval None
+  */
+void HAL_RTC_DST_ClearStoreOperation(RTC_HandleTypeDef *hrtc)
+{
+  __HAL_RTC_WRITEPROTECTION_DISABLE(hrtc);
+  CLEAR_BIT(hrtc->Instance->CR, RTC_CR_BKP);
+  __HAL_RTC_WRITEPROTECTION_ENABLE(hrtc);
+}
+
+/**
+  * @brief  Daylight Saving Time, Read the store operation bit.
+  * @param  hrtc RTC handle
+  * @retval operation see RTC_StoreOperation_Definitions
+  */
+uint32_t HAL_RTC_DST_ReadStoreOperation(RTC_HandleTypeDef *hrtc)
+{
+  return READ_BIT(hrtc->Instance->CR, RTC_CR_BKP);
+}
+
+/**
   * @}
   */
 
@@ -1845,4 +1919,3 @@ uint8_t RTC_Bcd2ToByte(uint8_t Value)
   * @}
   */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

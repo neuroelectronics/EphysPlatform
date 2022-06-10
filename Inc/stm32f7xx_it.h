@@ -24,7 +24,7 @@
 
 #ifdef __cplusplus
  extern "C" {
-#endif 
+#endif
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -58,12 +58,14 @@ void PendSV_Handler(void);
 void SysTick_Handler(void);
 void DMA1_Stream1_IRQHandler(void);
 void DMA1_Stream5_IRQHandler(void);
+void ADC_IRQHandler(void);
 void USART1_IRQHandler(void);
 void USART2_IRQHandler(void);
 void USART3_IRQHandler(void);
 void TIM8_TRG_COM_TIM14_IRQHandler(void);
 void SDMMC1_IRQHandler(void);
 void UART4_IRQHandler(void);
+void DMA2_Stream0_IRQHandler(void);
 void DMA2_Stream1_IRQHandler(void);
 void DMA2_Stream2_IRQHandler(void);
 void USART6_IRQHandler(void);
@@ -78,5 +80,3 @@ void UART8_IRQHandler(void);
 #endif
 
 #endif /* __STM32F7xx_IT_H */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
