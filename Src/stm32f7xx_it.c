@@ -28,7 +28,7 @@
 #include "CE32_ioncom.h"
 #include "CE32_macro.h"
 /* USER CODE END Includes */
-  
+
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
 
@@ -57,6 +57,7 @@ extern dataMGR MGR_RX2;
 extern dataMGR MGR_RX3;
 extern dataMGR MGR_RX4;
 extern dataMGR MGR_TX;
+extern dataMGR MGR_CDC;
 
 extern CE32_IONCOM_Handle IC_handle1;
 extern CE32_IONCOM_Handle IC_handle2;
@@ -77,6 +78,7 @@ extern CE32_IONCOM_Handle IC_handle4;
 
 /* External variables --------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd_USB_OTG_HS;
+extern DMA_HandleTypeDef hdma_adc1;
 extern SD_HandleTypeDef hsd1;
 extern TIM_HandleTypeDef htim14;
 extern DMA_HandleTypeDef hdma_usart1_rx;
@@ -94,7 +96,7 @@ extern UART_HandleTypeDef huart6;
 /* USER CODE END EV */
 
 /******************************************************************************/
-/*           Cortex-M7 Processor Interruption and Exception Handlers          */ 
+/*           Cortex-M7 Processor Interruption and Exception Handlers          */
 /******************************************************************************/
 /**
   * @brief This function handles Non maskable interrupt.
@@ -358,6 +360,22 @@ void UART4_IRQHandler(void)
   /* USER CODE BEGIN UART4_IRQn 1 */
 
   /* USER CODE END UART4_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA2 stream0 global interrupt.
+  */
+void DMA2_Stream0_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Stream0_IRQn 0 */
+	DMA_Base_Registers *regs = (DMA_Base_Registers *)  hdma_adc1.StreamBaseAddress;
+	regs->IFCR = DMA_FLAG_TCIF0_4 << hdma_adc1.StreamIndex;
+	regs->IFCR = DMA_FLAG_HTIF0_4<< hdma_adc1.StreamIndex;
+   
+  /* USER CODE END DMA2_Stream0_IRQn 0 */
+  /* USER CODE BEGIN DMA2_Stream0_IRQn 1 */
+	dataMGR_enQueue_Nbytes(&MGR_CDC,CDC_BUF_SIZE/2);
+  /* USER CODE END DMA2_Stream0_IRQn 1 */
 }
 
 /**

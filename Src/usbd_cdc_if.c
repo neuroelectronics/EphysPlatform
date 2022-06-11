@@ -246,7 +246,9 @@ static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   /* 6      | bDataBits  |   1   | Number Data bits (5, 6, 7, 8 or 16).          */
   /*******************************************************************************/
   case CDC_SET_LINE_CODING:
-				UART_DISABLE(IC_handle1.huart->Instance);
+		dataMGR_deQueue(&MGR_CDC,MGR_CDC.bufferUsed[0],0); //clear buffer
+
+		UART_DISABLE(IC_handle1.huart->Instance);
 		IC_handle1.huart->Init.BaudRate = *(uint32_t*)pbuf;
 		IC_handle1.huart->Init.WordLength = UART_WORDLENGTH_8B;
 		IC_handle1.huart->Init.StopBits = UART_STOPBITS_1;
@@ -382,6 +384,7 @@ static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 		UART_ENABLE(IC_handle3.huart->Instance);
 		DMA_ENABLE(IC_handle4.huart->hdmarx->Instance);
 		UART_ENABLE(IC_handle4.huart->Instance);
+		
     break;
 
   case CDC_GET_LINE_CODING:

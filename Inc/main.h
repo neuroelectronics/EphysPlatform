@@ -62,8 +62,6 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define HJ_MODE_Pin GPIO_PIN_13
 #define HJ_MODE_GPIO_Port GPIOC
-#define HJ_ROLE_Pin GPIO_PIN_14
-#define HJ_ROLE_GPIO_Port GPIOC
 #define HJ_STATE_Pin GPIO_PIN_15
 #define HJ_STATE_GPIO_Port GPIOC
 #define BLE_LED_Pin GPIO_PIN_6
@@ -72,8 +70,6 @@ void Error_Handler(void);
 #define LCD_TX_GPIO_Port GPIOA
 #define LCD_RX_Pin GPIO_PIN_1
 #define LCD_RX_GPIO_Port GPIOA
-#define IC2_TX_Pin GPIO_PIN_2
-#define IC2_TX_GPIO_Port GPIOA
 #define IC2_RX_Pin GPIO_PIN_3
 #define IC2_RX_GPIO_Port GPIOA
 #define LED_BUF_100_Pin GPIO_PIN_4
@@ -112,6 +108,8 @@ void Error_Handler(void);
 #define IC1_TX_GPIO_Port GPIOA
 #define IC1_RX_Pin GPIO_PIN_10
 #define IC1_RX_GPIO_Port GPIOA
+#define IC2_TX_Pin GPIO_PIN_5
+#define IC2_TX_GPIO_Port GPIOD
 #define SD_LED_Pin GPIO_PIN_6
 #define SD_LED_GPIO_Port GPIOD
 #define BLE_RX_Pin GPIO_PIN_0

@@ -27,7 +27,7 @@
 #include "dataMGR.h"
 #include "CE32_ioncom.h"
 #include "usbd_cdc_if.h"
-#define CDC_BUF_SIZE 0x2000
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,6 +46,10 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
+ADC_HandleTypeDef hadc2;
+ADC_HandleTypeDef hadc3;
+DMA_HandleTypeDef hdma_adc1;
 
 SD_HandleTypeDef hsd1;
 
@@ -133,6 +137,9 @@ static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USART6_UART_Init(void);
 static void MX_TIM14_Init(void);
+static void MX_ADC1_Init(void);
+static void MX_ADC2_Init(void);
+static void MX_ADC3_Init(void);
 /* USER CODE BEGIN PFP */
 
 void PowerUp_IC();
@@ -157,7 +164,6 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
-  
 
   /* Enable I-Cache---------------------------------------------------------*/
   SCB_EnableICache();
@@ -200,13 +206,23 @@ int main(void)
   MX_USART6_UART_Init();
   //MX_USB_DEVICE_Init();
   MX_TIM14_Init();
+  MX_ADC1_Init();
+  MX_ADC2_Init();
+  MX_ADC3_Init();
   /* USER CODE BEGIN 2 */
-	PowerUp_IC();
+	//PowerUp_IC();
 	//HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON,PWR_STOPENTRY_WFI); //Enter STOP mode for debug
 	Init_Buffer();
 	Init_Ioncom_Receiver();
 	MX_USB_DEVICE_Init();
-	RXdata_Indicator_Init();
+	//RXdata_Indicator_Init();
+	__HAL_ADC_ENABLE(&hadc1);
+	__HAL_ADC_ENABLE(&hadc2);
+	__HAL_ADC_ENABLE(&hadc3);
+	HAL_ADCEx_MultiModeStart_DMA(&hadc1,(uint32_t*)data_buf_RX_CDC,CDC_BUF_SIZE/4);
+	__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_TE); //disable interrupts other than half/full complete
+	__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_FE);
+	__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_DME);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -216,10 +232,14 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		RX_processor(&IC_handle1,0);
+		//RX_processor(&IC_handle1,0);
 		//RX_processor(&IC_handle2,1);
 		//RX_processor(&IC_handle3,2);
-		RX_processor(&IC_handle4,3);
+		//RX_processor(&IC_handle4,3);
+		HAL_GPIO_WritePin(LED_BUF_25_GPIO_Port,LED_BUF_25_Pin,MGR_CDC.bufferUsed[0]>(CDC_BUF_SIZE/4)?1:0);
+		HAL_GPIO_WritePin(LED_BUF_50_GPIO_Port,LED_BUF_50_Pin,MGR_CDC.bufferUsed[0]>(CDC_BUF_SIZE/2)?1:0);
+		HAL_GPIO_WritePin(LED_BUF_75_GPIO_Port,LED_BUF_75_Pin,MGR_CDC.bufferUsed[0]>(CDC_BUF_SIZE*3/4)?1:0);
+		HAL_GPIO_WritePin(LED_BUF_100_GPIO_Port,LED_BUF_100_Pin,MGR_CDC.bufferUsed[0]>CDC_BUF_SIZE?1:0);
 		USB_SEND();
   }
   /* USER CODE END 3 */
@@ -235,11 +255,11 @@ void SystemClock_Config(void)
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage 
+  /** Configure the main internal regulator output voltage
   */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-  /** Initializes the CPU, AHB and APB busses clocks 
+  /** Initializes the CPU, AHB and APB busses clocks
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
@@ -253,13 +273,13 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  /** Activate the Over-Drive mode 
+  /** Activate the Over-Drive mode
   */
   if (HAL_PWREx_EnableOverDrive() != HAL_OK)
   {
     Error_Handler();
   }
-  /** Initializes the CPU, AHB and APB busses clocks 
+  /** Initializes the CPU, AHB and APB busses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
@@ -288,6 +308,161 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
+
+  /* USER CODE BEGIN ADC1_Init 0 */
+
+  /* USER CODE END ADC1_Init 0 */
+
+  ADC_MultiModeTypeDef multimode = {0};
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC1_Init 1 */
+
+  /* USER CODE END ADC1_Init 1 */
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure the ADC multi-mode
+  */
+  multimode.Mode = ADC_TRIPLEMODE_INTERL;
+  multimode.DMAAccessMode = ADC_DMAACCESSMODE_2;
+  multimode.TwoSamplingDelay = ADC_TWOSAMPLINGDELAY_5CYCLES;
+  if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
+  * @brief ADC2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC2_Init(void)
+{
+
+  /* USER CODE BEGIN ADC2_Init 0 */
+
+  /* USER CODE END ADC2_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC2_Init 1 */
+
+  /* USER CODE END ADC2_Init 1 */
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc2.Instance = ADC2;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+  hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc2.Init.ContinuousConvMode = DISABLE;
+  hadc2.Init.DiscontinuousConvMode = DISABLE;
+  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc2.Init.NbrOfConversion = 1;
+  hadc2.Init.DMAContinuousRequests = DISABLE;
+  hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC2_Init 2 */
+
+  /* USER CODE END ADC2_Init 2 */
+
+}
+
+/**
+  * @brief ADC3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC3_Init(void)
+{
+
+  /* USER CODE BEGIN ADC3_Init 0 */
+
+  /* USER CODE END ADC3_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC3_Init 1 */
+
+  /* USER CODE END ADC3_Init 1 */
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc3.Instance = ADC3;
+  hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+  hadc3.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc3.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc3.Init.ContinuousConvMode = DISABLE;
+  hadc3.Init.DiscontinuousConvMode = DISABLE;
+  hadc3.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc3.Init.NbrOfConversion = 1;
+  hadc3.Init.DMAContinuousRequests = DISABLE;
+  hadc3.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC3_Init 2 */
+
+  /* USER CODE END ADC3_Init 2 */
+
 }
 
 /**
@@ -856,10 +1031,10 @@ static void MX_USART6_UART_Init(void)
 
 }
 
-/** 
+/**
   * Enable DMA controller clock
   */
-static void MX_DMA_Init(void) 
+static void MX_DMA_Init(void)
 {
 
   /* DMA controller clock enable */
@@ -873,6 +1048,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 2, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
   /* DMA2_Stream1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
@@ -949,7 +1127,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, HJ_MODE_Pin|HJ_ROLE_Pin|HJ_STATE_Pin|LED_BUF_75_Pin 
+  HAL_GPIO_WritePin(GPIOC, HJ_MODE_Pin|GPIO_PIN_14|HJ_STATE_Pin|LED_BUF_75_Pin
                           |LED_BUF_50_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -959,19 +1137,19 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_BUF_100_GPIO_Port, LED_BUF_100_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LED_BUF_25_Pin|VEE_IC_EN_Pin|VEE_EN_Pin|VCC_EN_Pin 
+  HAL_GPIO_WritePin(GPIOB, LED_BUF_25_Pin|VEE_IC_EN_Pin|VEE_EN_Pin|VCC_EN_Pin
                           |GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(NBL_0_GPIO_Port, NBL_0_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, MODE4_LED_Pin|MODE3_LED_Pin|MODE2_LED_Pin|MODE1_LED_Pin 
+  HAL_GPIO_WritePin(GPIOD, MODE4_LED_Pin|MODE3_LED_Pin|MODE2_LED_Pin|MODE1_LED_Pin
                           |SD_LED_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : HJ_MODE_Pin HJ_ROLE_Pin HJ_STATE_Pin LED_BUF_75_Pin 
+  /*Configure GPIO pins : HJ_MODE_Pin PC14 HJ_STATE_Pin LED_BUF_75_Pin
                            LED_BUF_50_Pin */
-  GPIO_InitStruct.Pin = HJ_MODE_Pin|HJ_ROLE_Pin|HJ_STATE_Pin|LED_BUF_75_Pin 
+  GPIO_InitStruct.Pin = HJ_MODE_Pin|GPIO_PIN_14|HJ_STATE_Pin|LED_BUF_75_Pin
                           |LED_BUF_50_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -992,9 +1170,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED_BUF_100_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED_BUF_25_Pin VEE_IC_EN_Pin VEE_EN_Pin VCC_EN_Pin 
+  /*Configure GPIO pins : LED_BUF_25_Pin VEE_IC_EN_Pin VEE_EN_Pin VCC_EN_Pin
                            PB9 */
-  GPIO_InitStruct.Pin = LED_BUF_25_Pin|VEE_IC_EN_Pin|VEE_EN_Pin|VCC_EN_Pin 
+  GPIO_InitStruct.Pin = LED_BUF_25_Pin|VEE_IC_EN_Pin|VEE_EN_Pin|VCC_EN_Pin
                           |GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -1008,9 +1186,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(NBL_0_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : MODE4_LED_Pin MODE3_LED_Pin MODE2_LED_Pin MODE1_LED_Pin 
+  /*Configure GPIO pins : MODE4_LED_Pin MODE3_LED_Pin MODE2_LED_Pin MODE1_LED_Pin
                            SD_LED_Pin */
-  GPIO_InitStruct.Pin = MODE4_LED_Pin|MODE3_LED_Pin|MODE2_LED_Pin|MODE1_LED_Pin 
+  GPIO_InitStruct.Pin = MODE4_LED_Pin|MODE3_LED_Pin|MODE2_LED_Pin|MODE1_LED_Pin
                           |SD_LED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -1098,40 +1276,25 @@ void RXdata_Indicator_Init()
 
 void RX_processor(CE32_IONCOM_Handle *IC_handle,int CH)
 {
-	if(IC_handle->RX_MGR.bufferUsed[0]>=148)
+	if(IC_handle->RX_MGR.bufferUsed[0]>=144)
 		{
-			if((uint8_t)dataMGR_deQueue_byte(&IC_handle->RX_MGR,0)==0x66)
+			dataMGR_enQueue_byte(&MGR_CDC,0x66);
+			dataMGR_enQueue_byte(&MGR_CDC,0x55);
+			dataMGR_enQueue_byte(&MGR_CDC,0x5d);
+			dataMGR_enQueue_byte(&MGR_CDC,CH);
+			for(int i=0;i<144;i++)
 			{
-				if((uint8_t)dataMGR_deQueue_byte(&IC_handle->RX_MGR,0)==0x55)
-				{
-					if((uint8_t)dataMGR_deQueue_byte(&IC_handle->RX_MGR,0)==0x5d)
-					{
-						if((uint8_t)dataMGR_deQueue_byte(&IC_handle->RX_MGR,0)==0xd5)
-						{
-							HAL_GPIO_WritePin(GPIOD,GPIO_PIN_13>>CH,GPIO_PIN_SET);
-							dataMGR_enQueue_byte(&MGR_CDC,0x66);
-							dataMGR_enQueue_byte(&MGR_CDC,0x55);
-							dataMGR_enQueue_byte(&MGR_CDC,0x5d);
-							dataMGR_enQueue_byte(&MGR_CDC,CH);
-							for(int i=0;i<144;i++)
-							{
-								while(IC_handle->RX_MGR.bufferUsed[0]<=0)
-								{
-								}
-								//dataMGR_enQueue_byte(&MGR_CDC,0xAA);
-								uint8_t temp=(uint8_t)dataMGR_deQueue_byte(&IC_handle->RX_MGR,0);
+				//dataMGR_enQueue_byte(&MGR_CDC,0xAA);
+				uint8_t temp=(uint8_t)dataMGR_deQueue_byte(&IC_handle->RX_MGR,0);
 //								if(temp==0)
 //								{
 //									__nop();
 //								}
-								dataMGR_enQueue_byte(&MGR_CDC,temp);
-							}
-							
-							//break;
-						}
-					}
-				}
+				dataMGR_enQueue_byte(&MGR_CDC,temp);
 			}
+			
+			//break;
+		
 		}
 }
 
@@ -1169,7 +1332,7 @@ void Error_Handler(void)
   * @retval None
   */
 void assert_failed(uint8_t *file, uint32_t line)
-{ 
+{
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */

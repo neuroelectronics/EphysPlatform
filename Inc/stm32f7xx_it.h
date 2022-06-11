@@ -24,7 +24,7 @@
 
 #ifdef __cplusplus
  extern "C" {
-#endif 
+#endif
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -64,6 +64,7 @@ void USART3_IRQHandler(void);
 void TIM8_TRG_COM_TIM14_IRQHandler(void);
 void SDMMC1_IRQHandler(void);
 void UART4_IRQHandler(void);
+void DMA2_Stream0_IRQHandler(void);
 void DMA2_Stream1_IRQHandler(void);
 void DMA2_Stream2_IRQHandler(void);
 void USART6_IRQHandler(void);
