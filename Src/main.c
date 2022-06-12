@@ -60,6 +60,7 @@ SPI_HandleTypeDef hspi4;
 SPI_HandleTypeDef hspi5;
 
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim14;
 
 UART_HandleTypeDef huart4;
@@ -79,12 +80,12 @@ SDRAM_HandleTypeDef hsdram1;
 int Nfail;
 int retries;
 int WaitCyc;
-uint8_t data_buf_RX1[BUF_SIZE];		// This records @ 20kHz x 32CH
-uint8_t data_buf_RX2[BUF_SIZE];		// This records @ 20kHz x 32CH
-uint8_t data_buf_RX3[BUF_SIZE];		// This records @ 20kHz x 32CH
-uint8_t data_buf_RX4[BUF_SIZE];		// This records @ 20kHz x 32CH
-uint8_t data_buf_TX[BUF_SIZE];		// This records @ 20kHz x 32CH
-uint8_t data_buf_RX_CDC[CDC_BUF_SIZE];
+uint8_t data_buf_RX1[0x10];		// This records @ 20kHz x 32CH
+uint8_t data_buf_RX2[0x10];		// This records @ 20kHz x 32CH
+uint8_t data_buf_RX3[0x10];		// This records @ 20kHz x 32CH
+uint8_t data_buf_RX4[0x10];		// This records @ 20kHz x 32CH
+uint8_t data_buf_TX[0x100];		// This records @ 20kHz x 32CH
+uint8_t data_buf_RX_CDC[BUF_SIZE];
 uint16_t misc_DigiSig;
 uint8_t rec_cnt;
 uint32_t log_cnt;
@@ -140,6 +141,7 @@ static void MX_TIM14_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
 static void MX_ADC3_Init(void);
+static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 
 void PowerUp_IC();
@@ -204,25 +206,34 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
-  //MX_USB_DEVICE_Init();
+  MX_USB_DEVICE_Init();
   MX_TIM14_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
   MX_ADC3_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
 	//PowerUp_IC();
 	//HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON,PWR_STOPENTRY_WFI); //Enter STOP mode for debug
 	Init_Buffer();
-	Init_Ioncom_Receiver();
+	//Init_Ioncom_Receiver();
 	MX_USB_DEVICE_Init();
 	//RXdata_Indicator_Init();
 	__HAL_ADC_ENABLE(&hadc1);
 	__HAL_ADC_ENABLE(&hadc2);
 	__HAL_ADC_ENABLE(&hadc3);
-	HAL_ADCEx_MultiModeStart_DMA(&hadc1,(uint32_t*)data_buf_RX_CDC,CDC_BUF_SIZE/4);
+	HAL_ADCEx_MultiModeStart_DMA(&hadc1,(uint32_t*)data_buf_RX_CDC,BUF_SIZE/4);
 	__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_TE); //disable interrupts other than half/full complete
 	__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_FE);
 	__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_DME);
+	
+	HAL_TIM_Base_Start(&htim6);// start timer for ADC
+//	uint16_t x=0;
+//	for(uint32_t i=0;i<BUF_SIZE/2;i++)
+//	{
+//		uint16_t* ptr =	(uint16_t*)data_buf_RX_CDC;
+//		ptr[i] = x++;
+//	}
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -236,11 +247,21 @@ int main(void)
 		//RX_processor(&IC_handle2,1);
 		//RX_processor(&IC_handle3,2);
 		//RX_processor(&IC_handle4,3);
-		HAL_GPIO_WritePin(LED_BUF_25_GPIO_Port,LED_BUF_25_Pin,MGR_CDC.bufferUsed[0]>(CDC_BUF_SIZE/4)?1:0);
-		HAL_GPIO_WritePin(LED_BUF_50_GPIO_Port,LED_BUF_50_Pin,MGR_CDC.bufferUsed[0]>(CDC_BUF_SIZE/2)?1:0);
-		HAL_GPIO_WritePin(LED_BUF_75_GPIO_Port,LED_BUF_75_Pin,MGR_CDC.bufferUsed[0]>(CDC_BUF_SIZE*3/4)?1:0);
-		HAL_GPIO_WritePin(LED_BUF_100_GPIO_Port,LED_BUF_100_Pin,MGR_CDC.bufferUsed[0]>CDC_BUF_SIZE?1:0);
+		HAL_GPIO_WritePin(LED_BUF_25_GPIO_Port,LED_BUF_25_Pin,MGR_CDC.bufferUsed[0]>(BUF_SIZE/4)?1:0);
+		HAL_GPIO_WritePin(LED_BUF_50_GPIO_Port,LED_BUF_50_Pin,MGR_CDC.bufferUsed[0]>(BUF_SIZE/2)?1:0);
+		HAL_GPIO_WritePin(LED_BUF_75_GPIO_Port,LED_BUF_75_Pin,MGR_CDC.bufferUsed[0]>(BUF_SIZE*3/4)?1:0);
+		HAL_GPIO_WritePin(LED_BUF_100_GPIO_Port,LED_BUF_100_Pin,MGR_CDC.bufferUsed[0]>=BUF_SIZE?1:0);
 		USB_SEND();
+		if(MGR_CDC.bufferUsed[0]>2*BUF_SIZE)
+		{
+			uint32_t purge_cnt=BUF_SIZE/2;
+			dataMGR_deQueue(&MGR_CDC,purge_cnt,0); //clear buffer
+		}
+
+//		if(MGR_CDC.bufferUsed[0]<BUF_SIZE/2)
+//		{
+//			dataMGR_enQueue_Nbytes(&MGR_CDC,BUF_SIZE/2);
+//		}
   }
   /* USER CODE END 3 */
 }
@@ -331,14 +352,14 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc1.Init.ContinuousConvMode = ENABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
+  hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T6_TRGO;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_LEFT;
   hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
@@ -350,7 +371,7 @@ static void MX_ADC1_Init(void)
   */
   multimode.Mode = ADC_TRIPLEMODE_INTERL;
   multimode.DMAAccessMode = ADC_DMAACCESSMODE_2;
-  multimode.TwoSamplingDelay = ADC_TWOSAMPLINGDELAY_5CYCLES;
+  multimode.TwoSamplingDelay = ADC_TWOSAMPLINGDELAY_6CYCLES;
   if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
   {
     Error_Handler();
@@ -390,11 +411,12 @@ static void MX_ADC2_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc2.Instance = ADC2;
-  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc2.Init.Resolution = ADC_RESOLUTION_12B;
   hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc2.Init.ContinuousConvMode = DISABLE;
   hadc2.Init.DiscontinuousConvMode = DISABLE;
-  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc2.Init.DataAlign = ADC_DATAALIGN_LEFT;
   hadc2.Init.NbrOfConversion = 1;
   hadc2.Init.DMAContinuousRequests = DISABLE;
   hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
@@ -437,12 +459,12 @@ static void MX_ADC3_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc3.Instance = ADC3;
-  hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+  hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
   hadc3.Init.Resolution = ADC_RESOLUTION_12B;
   hadc3.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc3.Init.ContinuousConvMode = DISABLE;
   hadc3.Init.DiscontinuousConvMode = DISABLE;
-  hadc3.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc3.Init.DataAlign = ADC_DATAALIGN_LEFT;
   hadc3.Init.NbrOfConversion = 1;
   hadc3.Init.DMAContinuousRequests = DISABLE;
   hadc3.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
@@ -787,6 +809,44 @@ static void MX_TIM1_Init(void)
 }
 
 /**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 0;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 71;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
   * @brief TIM14 Initialization Function
   * @param None
   * @retval None
@@ -1079,12 +1139,12 @@ static void MX_FMC_Init(void)
   hsdram1.Instance = FMC_SDRAM_DEVICE;
   /* hsdram1.Init */
   hsdram1.Init.SDBank = FMC_SDRAM_BANK2;
-  hsdram1.Init.ColumnBitsNumber = FMC_SDRAM_COLUMN_BITS_NUM_8;
+  hsdram1.Init.ColumnBitsNumber = FMC_SDRAM_COLUMN_BITS_NUM_10;
   hsdram1.Init.RowBitsNumber = FMC_SDRAM_ROW_BITS_NUM_13;
   hsdram1.Init.MemoryDataWidth = FMC_SDRAM_MEM_BUS_WIDTH_8;
   hsdram1.Init.InternalBankNumber = FMC_SDRAM_INTERN_BANKS_NUM_4;
-  hsdram1.Init.CASLatency = FMC_SDRAM_CAS_LATENCY_1;
-  hsdram1.Init.WriteProtection = FMC_SDRAM_WRITE_PROTECTION_ENABLE;
+  hsdram1.Init.CASLatency = FMC_SDRAM_CAS_LATENCY_2;
+  hsdram1.Init.WriteProtection = FMC_SDRAM_WRITE_PROTECTION_DISABLE;
   hsdram1.Init.SDClockPeriod = FMC_SDRAM_CLOCK_DISABLE;
   hsdram1.Init.ReadBurst = FMC_SDRAM_RBURST_DISABLE;
   hsdram1.Init.ReadPipeDelay = FMC_SDRAM_RPIPE_DELAY_0;
@@ -1300,9 +1360,9 @@ void RX_processor(CE32_IONCOM_Handle *IC_handle,int CH)
 
 void USB_SEND()
 {
-	if(MGR_CDC.bufferUsed[0]>=CDC_BUF_SIZE/4)
+	const uint16_t ByteToSend = 0x8000;
+	if(MGR_CDC.bufferUsed[0]>=ByteToSend)
 	{
-		int ByteToSend=CDC_BUF_SIZE/4;
 		if(CDC_Transmit_HS((uint8_t*)(data_buf_RX_CDC+MGR_CDC.outPTR[0]),ByteToSend)==USBD_OK)
 		{
 			dataMGR_deQueue(&MGR_CDC,ByteToSend,0);

@@ -14,5 +14,4 @@ typedef struct
   __IO uint32_t IFCR;  /*!< DMA interrupt flag clear register */
 } DMA_Base_Registers;
 
-#define CDC_BUF_SIZE 0x4000
 #endif

@@ -46,11 +46,12 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-extern uint8_t data_buf_RX1[BUF_SIZE];		// This records @ 20kHz x 32CH
-extern uint8_t data_buf_RX2[BUF_SIZE];		// This records @ 20kHz x 32CH
-extern uint8_t data_buf_RX3[BUF_SIZE];		// This records @ 20kHz x 32CH
-extern uint8_t data_buf_RX4[BUF_SIZE];		// This records @ 20kHz x 32CH
-extern uint8_t data_buf_TX[BUF_SIZE];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_RX1[0x10];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_RX2[0x10];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_RX3[0x10];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_RX4[0x10];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_TX[0x100];		// This records @ 20kHz x 32CH
+extern uint8_t data_buf_RX_CDC[BUF_SIZE];
 
 extern dataMGR MGR_RX1;
 extern dataMGR MGR_RX2;
@@ -220,7 +221,7 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-
+	//hadc1.Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
   /* USER CODE END SysTick_IRQn 1 */
 }
 
@@ -369,12 +370,20 @@ void DMA2_Stream0_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA2_Stream0_IRQn 0 */
 	DMA_Base_Registers *regs = (DMA_Base_Registers *)  hdma_adc1.StreamBaseAddress;
-	regs->IFCR = DMA_FLAG_TCIF0_4 << hdma_adc1.StreamIndex;
-	regs->IFCR = DMA_FLAG_HTIF0_4<< hdma_adc1.StreamIndex;
-   
+	int cnt=0;
+	if(regs->ISR&DMA_FLAG_TCIF0_4 << hdma_adc1.StreamIndex)
+	{
+		regs->IFCR = DMA_FLAG_TCIF0_4 << hdma_adc1.StreamIndex;
+		cnt++;
+	}
+	if(regs->ISR&DMA_FLAG_HTIF0_4 << hdma_adc1.StreamIndex)
+	{
+		regs->IFCR = DMA_FLAG_HTIF0_4<< hdma_adc1.StreamIndex;
+		cnt++;
+	}
   /* USER CODE END DMA2_Stream0_IRQn 0 */
   /* USER CODE BEGIN DMA2_Stream0_IRQn 1 */
-	dataMGR_enQueue_Nbytes(&MGR_CDC,CDC_BUF_SIZE/2);
+	dataMGR_enQueue_Nbytes(&MGR_CDC,cnt*BUF_SIZE/2);
   /* USER CODE END DMA2_Stream0_IRQn 1 */
 }
 

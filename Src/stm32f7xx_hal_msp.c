@@ -124,8 +124,11 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
     hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
     hdma_adc1.Init.Mode = DMA_CIRCULAR;
-    hdma_adc1.Init.Priority = DMA_PRIORITY_LOW;
-    hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    hdma_adc1.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+    hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+    hdma_adc1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_1QUARTERFULL;
+    hdma_adc1.Init.MemBurst = DMA_MBURST_SINGLE;
+    hdma_adc1.Init.PeriphBurst = DMA_PBURST_SINGLE;
     if (HAL_DMA_Init(&hdma_adc1) != HAL_OK)
     {
       Error_Handler();
@@ -620,6 +623,17 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
 
   /* USER CODE END TIM1_MspInit 1 */
   }
+  else if(htim_base->Instance==TIM6)
+  {
+  /* USER CODE BEGIN TIM6_MspInit 0 */
+
+  /* USER CODE END TIM6_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_TIM6_CLK_ENABLE();
+  /* USER CODE BEGIN TIM6_MspInit 1 */
+
+  /* USER CODE END TIM6_MspInit 1 */
+  }
   else if(htim_base->Instance==TIM14)
   {
   /* USER CODE BEGIN TIM14_MspInit 0 */
@@ -688,6 +702,17 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
   /* USER CODE BEGIN TIM1_MspDeInit 1 */
 
   /* USER CODE END TIM1_MspDeInit 1 */
+  }
+  else if(htim_base->Instance==TIM6)
+  {
+  /* USER CODE BEGIN TIM6_MspDeInit 0 */
+
+  /* USER CODE END TIM6_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_TIM6_CLK_DISABLE();
+  /* USER CODE BEGIN TIM6_MspDeInit 1 */
+
+  /* USER CODE END TIM6_MspDeInit 1 */
   }
   else if(htim_base->Instance==TIM14)
   {
@@ -799,7 +824,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     hdma_usart1_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     hdma_usart1_rx.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
     hdma_usart1_rx.Init.Mode = DMA_NORMAL;
-    hdma_usart1_rx.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+    hdma_usart1_rx.Init.Priority = DMA_PRIORITY_MEDIUM;
     hdma_usart1_rx.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
     hdma_usart1_rx.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_HALFFULL;
     hdma_usart1_rx.Init.MemBurst = DMA_MBURST_SINGLE;
