@@ -93,7 +93,7 @@ extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart6;
 /* USER CODE BEGIN EV */
-
+extern ADC_HandleTypeDef hadc1;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -371,19 +371,22 @@ void DMA2_Stream0_IRQHandler(void)
   /* USER CODE BEGIN DMA2_Stream0_IRQn 0 */
 	DMA_Base_Registers *regs = (DMA_Base_Registers *)  hdma_adc1.StreamBaseAddress;
 	int cnt=0;
-	if(regs->ISR&DMA_FLAG_TCIF0_4 << hdma_adc1.StreamIndex)
-	{
-		regs->IFCR = DMA_FLAG_TCIF0_4 << hdma_adc1.StreamIndex;
-		cnt++;
-	}
-	if(regs->ISR&DMA_FLAG_HTIF0_4 << hdma_adc1.StreamIndex)
-	{
-		regs->IFCR = DMA_FLAG_HTIF0_4<< hdma_adc1.StreamIndex;
-		cnt++;
-	}
+	regs->IFCR = DMA_FLAG_TCIF0_4 << hdma_adc1.StreamIndex;
+	regs->IFCR = DMA_FLAG_HTIF0_4<< hdma_adc1.StreamIndex;
+
   /* USER CODE END DMA2_Stream0_IRQn 0 */
   /* USER CODE BEGIN DMA2_Stream0_IRQn 1 */
-	dataMGR_enQueue_Nbytes(&MGR_CDC,cnt*BUF_SIZE/2);
+	dataMGR_enQueue_Nbytes(&MGR_CDC,IC_handle1.DMA_TransSize);
+	UART_IONCOM_Bank_EnqueueBank(&IC_handle1);
+	if((hadc1.DMA_Handle->Instance->CR&DMA_SxCR_CT)!=0) //Check which buffer is being used currently
+	{
+		hadc1.DMA_Handle->Instance->M0AR = (uint32_t)MGR_CDC.dataPtr + IC_handle1.DMA_bank_in*(IC_handle1.DMA_TransSize); //Set the DMA to be in circular mode and automatic filling the buffer
+	}
+	else
+	{
+		hadc1.DMA_Handle->Instance->M1AR = (uint32_t)MGR_CDC.dataPtr + IC_handle1.DMA_bank_in*(IC_handle1.DMA_TransSize); //Set the DMA to be in circular mode and automatic filling the buffer
+	}
+	//dataMGR_enQueue_Nbytes(&MGR_CDC,cnt*BUF_SIZE/2);
   /* USER CODE END DMA2_Stream0_IRQn 1 */
 }
 

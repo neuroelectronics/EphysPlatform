@@ -206,7 +206,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
-  MX_USB_DEVICE_Init();
+  //MX_USB_DEVICE_Init();
   MX_TIM14_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
@@ -222,10 +222,34 @@ int main(void)
 	__HAL_ADC_ENABLE(&hadc1);
 	__HAL_ADC_ENABLE(&hadc2);
 	__HAL_ADC_ENABLE(&hadc3);
-	HAL_ADCEx_MultiModeStart_DMA(&hadc1,(uint32_t*)data_buf_RX_CDC,BUF_SIZE/4);
+	
+	IC_handle1.DMA_TotalBanks=4;
+	IC_handle1.DMA_TransSize=BUF_SIZE/IC_handle1.DMA_TotalBanks;
+	//HAL_ADCEx_MultiModeStart_DMA(&hadc1,(uint32_t*)MGR_CDC.dataPtr,IC_handle1.DMA_TransSize/4);
+	__HAL_ADC_ENABLE(&hadc1);
+	__IO uint32_t counter = 0;
+	counter = (ADC_STAB_DELAY_US * (SystemCoreClock / 1000000));
+	while(counter != 0)
+	{
+		counter--;
+	}
+	ADC->CCR |= ADC_CCR_DDS;
+	
+	//__HAL_DMA_DISABLE(hadc1.DMA_Handle);
+	__HAL_DMA_ENABLE_IT(hadc1.DMA_Handle,DMA_IT_TC); //Enable transmit complete IT
+	__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_HT); //disable interrupts other than half/full complete
 	__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_TE); //disable interrupts other than half/full complete
-	__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_FE);
 	__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_DME);
+	
+	hadc1.DMA_Handle->Instance->CR&=~(DMA_SxCR_CIRC|DMA_SxCR_CT); //Set current target to M0AR
+	hadc1.DMA_Handle->Instance->CR|=DMA_SxCR_DBM; //Enable Double buffer mode
+	hadc1.DMA_Handle->Instance->NDTR=IC_handle1.DMA_TransSize/4;
+	hadc1.DMA_Handle->Instance->PAR=(uint32_t)&ADC->CDR;
+	hadc1.DMA_Handle->Instance->M0AR=(uint32_t)MGR_CDC.dataPtr;
+	hadc1.DMA_Handle->Instance->M1AR=(uint32_t)MGR_CDC.dataPtr+IC_handle1.DMA_TransSize;
+	__HAL_DMA_ENABLE(hadc1.DMA_Handle);
+
+	
 	
 	HAL_TIM_Base_Start(&htim6);// start timer for ADC
 //	uint16_t x=0;
@@ -251,12 +275,13 @@ int main(void)
 		HAL_GPIO_WritePin(LED_BUF_50_GPIO_Port,LED_BUF_50_Pin,MGR_CDC.bufferUsed[0]>(BUF_SIZE/2)?1:0);
 		HAL_GPIO_WritePin(LED_BUF_75_GPIO_Port,LED_BUF_75_Pin,MGR_CDC.bufferUsed[0]>(BUF_SIZE*3/4)?1:0);
 		HAL_GPIO_WritePin(LED_BUF_100_GPIO_Port,LED_BUF_100_Pin,MGR_CDC.bufferUsed[0]>=BUF_SIZE?1:0);
-		USB_SEND();
+		
 		if(MGR_CDC.bufferUsed[0]>2*BUF_SIZE)
 		{
 			uint32_t purge_cnt=BUF_SIZE/2;
 			dataMGR_deQueue(&MGR_CDC,purge_cnt,0); //clear buffer
 		}
+		USB_SEND();
 
 //		if(MGR_CDC.bufferUsed[0]<BUF_SIZE/2)
 //		{
@@ -307,7 +332,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_6) != HAL_OK)
   {
@@ -352,7 +377,7 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
@@ -371,7 +396,7 @@ static void MX_ADC1_Init(void)
   */
   multimode.Mode = ADC_TRIPLEMODE_INTERL;
   multimode.DMAAccessMode = ADC_DMAACCESSMODE_2;
-  multimode.TwoSamplingDelay = ADC_TWOSAMPLINGDELAY_6CYCLES;
+  multimode.TwoSamplingDelay = ADC_TWOSAMPLINGDELAY_10CYCLES;
   if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
   {
     Error_Handler();
@@ -411,7 +436,7 @@ static void MX_ADC2_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc2.Instance = ADC2;
-  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc2.Init.Resolution = ADC_RESOLUTION_12B;
   hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc2.Init.ContinuousConvMode = DISABLE;
@@ -459,7 +484,7 @@ static void MX_ADC3_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc3.Instance = ADC3;
-  hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc3.Init.Resolution = ADC_RESOLUTION_12B;
   hadc3.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc3.Init.ContinuousConvMode = DISABLE;
@@ -828,7 +853,7 @@ static void MX_TIM6_Init(void)
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 0;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 71;
+  htim6.Init.Period = 239;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
@@ -1360,7 +1385,7 @@ void RX_processor(CE32_IONCOM_Handle *IC_handle,int CH)
 
 void USB_SEND()
 {
-	const uint16_t ByteToSend = 0x8000;
+	const uint16_t ByteToSend = 2048;
 	if(MGR_CDC.bufferUsed[0]>=ByteToSend)
 	{
 		if(CDC_Transmit_HS((uint8_t*)(data_buf_RX_CDC+MGR_CDC.outPTR[0]),ByteToSend)==USBD_OK)
