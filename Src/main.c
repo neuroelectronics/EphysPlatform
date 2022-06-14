@@ -224,12 +224,12 @@ int main(void)
 	__HAL_ADC_ENABLE(&hadc3);
 	uint32_t * ADC_test;
 	//HAL_ADCEx_MultiModeStart_DMA(&hadc1,(uint32_t*)ADC_test,1);
-	HAL_ADCEx_MultiModeStart_DMA(&hadc1,(uint32_t*)&data_buf_RX_CDC[3],(BUF_SIZE>>2));
+	HAL_ADCEx_MultiModeStart_DMA(&hadc1,(uint32_t*)&data_buf_RX_CDC[3],(BUF_SIZE/4));
 	__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_TE); //disable interrupts other than half/full complete
 	//__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_FE);
 	__HAL_DMA_DISABLE_IT(hadc1.DMA_Handle,DMA_IT_DME);
-	
-	HAL_TIM_Base_Start(&htim6);// start timer for ADC
+	hadc1.Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+	//HAL_TIM_Base_Start(&htim6);// start timer for ADC
 //	uint16_t x=0;
 //	for(uint32_t i=0;i<BUF_SIZE/2;i++)
 //	{
@@ -357,10 +357,10 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
-  hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T6_TRGO;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_LEFT;
   hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DMAContinuousRequests = ENABLE;
@@ -830,7 +830,7 @@ static void MX_TIM6_Init(void)
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 0;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 144-1;
+  htim6.Init.Period = 143;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
