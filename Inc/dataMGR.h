@@ -48,7 +48,9 @@
 #define MISC_INTERVAL				64
 
 //BUF_SIZE must be 512B aligned,to compatiable with DMA process,and complain with LFP_size and mask rule(64x & 64x-1 =mask),has to be prod of 2
-#define BUF_SIZE 						0x20000
+
+//Do not exceed 0x8000 since Base is uint16
+#define BUF_SIZE 						0x08000
 //#define BUF_MASK 						(BUF_SIZE-1)
 #define LFP_SIZE 						0x100
 #define LFP_MASK 						(LFP_SIZE/64-1)

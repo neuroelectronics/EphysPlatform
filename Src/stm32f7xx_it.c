@@ -370,20 +370,18 @@ void DMA2_Stream0_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA2_Stream0_IRQn 0 */
 	DMA_Base_Registers *regs = (DMA_Base_Registers *)  hdma_adc1.StreamBaseAddress;
-	int cnt=0;
 	if(regs->ISR&DMA_FLAG_TCIF0_4 << hdma_adc1.StreamIndex)
 	{
 		regs->IFCR = DMA_FLAG_TCIF0_4 << hdma_adc1.StreamIndex;
-		cnt++;
+		dataMGR_enQueue_Nbytes(&MGR_CDC,BUF_SIZE/2);
 	}
 	if(regs->ISR&DMA_FLAG_HTIF0_4 << hdma_adc1.StreamIndex)
 	{
 		regs->IFCR = DMA_FLAG_HTIF0_4<< hdma_adc1.StreamIndex;
-		cnt++;
+		dataMGR_enQueue_Nbytes(&MGR_CDC,BUF_SIZE/2);
 	}
   /* USER CODE END DMA2_Stream0_IRQn 0 */
   /* USER CODE BEGIN DMA2_Stream0_IRQn 1 */
-	dataMGR_enQueue_Nbytes(&MGR_CDC,cnt*BUF_SIZE/2);
   /* USER CODE END DMA2_Stream0_IRQn 1 */
 }
 

@@ -248,8 +248,8 @@ static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   /*******************************************************************************/
   case CDC_SET_LINE_CODING:
 	{
-//	  uint32_t purge_cnt=(MGR_CDC.bufferUsed[0]/BUF_SIZE)*BUF_SIZE;
-//		dataMGR_deQueue(&MGR_CDC,purge_cnt,0); //clear buffer
+	  uint32_t purge_cnt=(MGR_CDC.bufferUsed[0]/BUF_SIZE)*BUF_SIZE;
+		dataMGR_deQueue(&MGR_CDC,purge_cnt,0); //clear buffer
 //		HAL_TIM_Base_Start(&htim6);// start timer for ADC
 //		UART_DISABLE(IC_handle1.huart->Instance);
 //		IC_handle1.huart->Init.BaudRate = *(uint32_t*)pbuf;
